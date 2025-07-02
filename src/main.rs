@@ -1,14 +1,27 @@
 use pcap::Device;
 
 fn main() {
-    let mut cap = Device::lookup().unwrap().unwrap().open().unwrap();
-    
-    // while let Ok(packet) = cap.next_packet() {
-    //     println!("received packet {:?}", packet);
-    // }
+    let device = Device::lookup().unwrap().unwrap();
+    println!("Name: {:?}", device.name);
+    if let Some(desc) = &device.desc {
+        println!("Desc: {:?}", desc);
+    }
+
+    for addr in &device.addresses {
+        println!("  IP: {:?}", addr.addr);
+        println!("  Netmask: {:?}", addr.netmask);
+    }
+
+    let mut cap = device.open().expect("Failed to open device");
+    let mut count = 0;
+    while let Ok(packet) = cap.next_packet() {
+        println!("received packet {:?}", packet);
+        count += 1;
+        println!("that is the {:?} packet sniffed!", count);
+    }
 }
 
-fn get_device_info() {
+fn get_devices() {
     let devices = Device::list().unwrap();
     println!("{} devices found!", devices.len());
 
