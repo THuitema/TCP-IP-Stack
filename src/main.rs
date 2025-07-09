@@ -1,6 +1,6 @@
 mod ethernet;
 mod ip;
-use ethernet::EthernetFrame;
+use ethernet::{EthernetFrame, capture_ethernet_frames};
 use pcap::{Capture, Device};
 
 fn main() {
@@ -10,19 +10,11 @@ fn main() {
         println!("Desc: {:?}", desc);
     }
 
-    let mut cap = device.open().expect("Failed to open device");
-    let mut count = 0;
-    while let Ok(packet) = cap.next_packet() {
-        if let Some(ethernet_frame) = EthernetFrame::from_bytes(packet.data) {
-            println!("{}", ethernet_frame);
-        } else {
-            println!("Packet received, but error parsing the ethernet header");
-        }
-        count += 1;
-        if count == 3 {
-            break;
-        }
+    let mut cap: Capture<pcap::Active> = device.open().expect("Failed to open device");
+    let ethernet_frames = capture_ethernet_frames(&mut cap, 3);
 
+    for frame in ethernet_frames {
+        println!("{}", frame);
     }
 }
 

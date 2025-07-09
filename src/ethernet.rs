@@ -1,5 +1,6 @@
 use std::convert::TryInto;
 use std::fmt;
+use pcap::{Active, Capture};
 
 pub struct EthernetFrame {
     header: EthernetHeader,
@@ -83,4 +84,22 @@ impl fmt::Display for EthernetHeader {
             src_str
         )
     }
+}
+
+pub fn capture_ethernet_frames(capture: &mut Capture<Active>, count: usize) -> Vec<EthernetFrame> {
+    let mut frames = Vec::new();
+
+    while let Ok(packet) = capture.next_packet() {
+        if let Some(ethernet_frame) = EthernetFrame::from_bytes(packet.data) {
+            frames.push(ethernet_frame);
+        } else {
+            eprintln!("Packet received, but error parsing the ethernet header");
+        }
+
+        if frames.len() >= count {
+            break;
+        }
+    }
+
+    frames
 }
