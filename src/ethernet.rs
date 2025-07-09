@@ -1,8 +1,6 @@
 use std::convert::TryInto;
 use std::fmt;
 
-// TODO: move stuff in impl to one for EthernetFrame
-// change functionality in main.rs to use EthernetFrame
 pub struct EthernetFrame {
     header: EthernetHeader,
     payload: Vec<u8>
