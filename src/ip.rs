@@ -1,3 +1,8 @@
+pub struct IPPacket {
+    header: IPHeader,
+    payload: Vec<u8>
+}
+
 pub struct IPHeader {
     version: u8, // IP version (4 bits)
     header_length: u8, // length of header in 32-bit words (4 bits)
@@ -9,8 +14,8 @@ pub struct IPHeader {
     ttl: u8, // time to live (8 bits)
     protocol: u8, // higher-level protocol used (8 bits)
     checksum: u16, // 16 bits
-    source: [u8; 4], // IP address of source (32 bits)
-    destination: [u8; 4], // IP address of destination (32 bits)
+    src_addr: [u8; 4], // IP address of source (32 bits)
+    dest_addr: [u8; 4], // IP address of destination (32 bits)
     // TODO: add struct to differentiate IPs between IPv4 and IPv6
 
     options: u32, // optional
