@@ -118,6 +118,10 @@ impl fmt::Display for IPv4Header {
             n => format!("Other ({})", n),
         };
 
+        // TODO: translate IP addresses
+        let source_addr = "";
+        let dest_addr = "";
+
 
         let options = match self.options {
             Some(o) => o.to_string(),
