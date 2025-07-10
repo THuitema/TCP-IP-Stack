@@ -1,4 +1,5 @@
 use pcap::Error;
+use std::fmt;
 
 pub struct IPv4Packet {
     header: IPv4Header,
@@ -88,5 +89,44 @@ impl IPv4Packet {
     // TODO
     pub fn verify_checksum(&self) -> bool {
         true
+    }
+}
+
+impl fmt::Display for IPv4Packet {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "IPv4 Packet {{\n{} \n  Payload: {} bytes \n}}",
+            self.header,
+            self.payload.len()
+        )
+    }
+}
+
+impl fmt::Display for IPv4Header {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let options = match self.options {
+            Some(o) => o.to_string(),
+            None => "None".to_string()
+        };
+
+        write!(
+            f,
+            "  Version: {},\n  Header Length (in 32-bit words): {} words,\n  Differentiated Services Code Point (DSCP): {},\n  Explicit Congestion Notification (ECN): {},\n  Packet Length: {} bytes,\n  Identification: {},\n  Flags: {},\n  Offset: {},\n  Time to Live: {} seconds,\n  Protocol: {},\n  Checksum: {},\n  Source Address: {},\n  Destination Address: {},\n  Options: {}",
+            self.version, 
+            self.header_length, 
+            self.dscp, 
+            self.ecn, 
+            self.packet_length, 
+            self.identification, 
+            self.flags,
+            self.offset,
+            self.ttl,
+            self.protocol,
+            self.checksum,
+            self.src_addr,
+            self.dest_addr,
+            options
+        )
     }
 }
