@@ -1,6 +1,7 @@
 mod ethernet;
 mod ip;
-use ethernet::{EthernetFrame, capture_ethernet_frames};
+use ethernet::{capture_ethernet_frames, EthernetFrame};
+use ip::IPv4Packet;
 use pcap::{Capture, Device};
 
 fn main() {
@@ -11,10 +12,21 @@ fn main() {
     }
 
     let mut cap: Capture<pcap::Active> = device.open().expect("Failed to open device");
-    let ethernet_frames = capture_ethernet_frames(&mut cap, 3);
+    let ethernet_frames = capture_ethernet_frames(&mut cap, 5);
 
     for frame in ethernet_frames {
         println!("{}", frame);
+        match frame.header.ethertype_to_protocol_name().as_str() {
+            "IPv4" => match IPv4Packet::from_bytes(&frame.payload) {
+                Ok(ip_packet) => {
+                    // print ip packet here
+                }
+                Err(e) => eprintln!("{}", e),
+            },
+            s => {
+                println!("{} packets not yet supported", s);
+            }
+        };
     }
 }
 
