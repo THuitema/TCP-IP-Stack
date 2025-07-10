@@ -18,8 +18,7 @@ pub struct IPv4Header {
     checksum: u16, // 16 bits
     src_addr: u32, // IP address of source (32 bits)
     dest_addr: u32, // IP address of destination (32 bits)
-    options: Option<u32>, // optional (up to 32 bits)
-    pad: Option<u32>, // optional (32 bits - options bits)
+    options: Option<u32>, // optional (padding added if necessary to make it 32 bits)
 }
 
 impl IPv4Packet {
@@ -44,12 +43,18 @@ impl IPv4Packet {
         let src_addr = u32::from_be_bytes([payload[12], payload[13], payload[14], payload[15]]);
         let dest_addr = u32::from_be_bytes([payload[16], payload[17], payload[18], payload[19]]);
 
-        // TODO: Calculate if there are options and padding
+        // Check if there are options and padding
+        let options: Option<u32>;
+        let ip_payload: Vec<u8>;
 
-        println!(
-            "version: {:X}, header_len: {:?}, packet_len: {:?}, protocol: {:X}",
-            version, header_len, packet_length, protocol
-        );
+        if header_len > 5 {
+            options = Some(u32::from_be_bytes([payload[20], payload[21], payload[22], payload[23]]));
+            ip_payload = payload[24..].to_vec();
+        } else {
+            options = None;
+            ip_payload = payload[20..].to_vec();
+        }
+
         let header = IPv4Header {
             version: version,
             header_length: header_len,
@@ -63,13 +68,12 @@ impl IPv4Packet {
             checksum: checksum,
             src_addr: src_addr,
             dest_addr: dest_addr,
-            options: None,
-            pad: None,
+            options: options
         };
 
         Ok(IPv4Packet {
             header: header,
-            payload: payload[20..].to_vec(),
+            payload: ip_payload,
         })
     }
 }
