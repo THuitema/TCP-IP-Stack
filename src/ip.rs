@@ -12,12 +12,12 @@ pub struct IPv4Header {
     packet_length: u16,   // length of packet, including header (16 bits)
     identification: u16,  // ID to reassemble packet, if fragmented (16 bits)
     flags: u8,            // 3 bits
-    offset: u16, // offset (number of bytes divided by 8) from where this data starts in reassembled packet (13 bits)
-    ttl: u8,     // time to live (8 bits)
-    protocol: u8, // higher-level protocol used (8 bits)
-    checksum: u16, // 16 bits
-    src_addr: u32, // IP address of source (32 bits)
-    dest_addr: u32, // IP address of destination (32 bits)
+    offset: u16,          // offset (number of bytes divided by 8) from where this data starts in reassembled packet (13 bits)
+    ttl: u8,              // time to live (8 bits)
+    protocol: u8,         // higher-level protocol used (8 bits)
+    checksum: u16,        // 16 bits
+    src_addr: u32,        // IP address of source (32 bits)
+    dest_addr: u32,       // IP address of destination (32 bits)
     options: Option<u32>, // optional (padding added if necessary to make it 32 bits)
 }
 
@@ -48,7 +48,12 @@ impl IPv4Packet {
         let ip_payload: Vec<u8>;
 
         if header_len > 5 {
-            options = Some(u32::from_be_bytes([payload[20], payload[21], payload[22], payload[23]]));
+            options = Some(u32::from_be_bytes([
+                payload[20],
+                payload[21],
+                payload[22],
+                payload[23],
+            ]));
             ip_payload = payload[24..].to_vec();
         } else {
             options = None;
@@ -75,5 +80,10 @@ impl IPv4Packet {
             header: header,
             payload: ip_payload,
         })
+    }
+
+    // TODO
+    pub fn verify_checksum(&self) -> bool {
+        true
     }
 }
