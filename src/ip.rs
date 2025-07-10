@@ -8,7 +8,8 @@ pub struct IPv4Packet {
 pub struct IPv4Header {
     version: u8,          // IP version (4 bits)
     header_length: u8,    // length of header in 32-bit words (4 bits)
-    type_of_service: u8,  // type of service (8 bits)
+    dscp: u8,             // Differentiated Services Code Point (6 bits)
+    ecn: u8,              // Explicit Congestion Notification (2 bits)
     packet_length: u16,   // length of packet, including header (16 bits)
     identification: u16,  // ID to reassemble packet, if fragmented (16 bits)
     flags: u8,            // 3 bits
@@ -30,7 +31,8 @@ impl IPv4Packet {
         }
 
         let header_len = payload[0] & 0x0F; // last 4 bits
-        let type_of_service = payload[1];
+        let dcsp = payload[1] >> 2;
+        let ecn = payload[1] & 0x03;
         let packet_length = u16::from_be_bytes([payload[2], payload[3]]);
         let identification = u16::from_be_bytes([payload[4], payload[5]]);
         let flags = payload[6] >> 5;
@@ -63,7 +65,8 @@ impl IPv4Packet {
         let header = IPv4Header {
             version: version,
             header_length: header_len,
-            type_of_service: type_of_service,
+            dscp: dcsp,
+            ecn: ecn,
             packet_length: packet_length,
             identification: identification,
             flags: flags,
