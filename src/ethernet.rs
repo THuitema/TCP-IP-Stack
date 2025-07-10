@@ -40,17 +40,6 @@ impl EthernetFrame {
     }
 }
 
-impl fmt::Display for EthernetFrame {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "EthernetFrame {{\n{} \n  Payload: {} bytes \n}}",
-            self.header,
-            self.payload.len()
-        )
-    }
-}
-
 /**
  * Allows us to do "let e = EthernetHeader::from_bytes(foo)"
  */
@@ -65,6 +54,17 @@ impl EthernetHeader {
             0x86DD => "IPv6".to_string(),
             n => format!("{:X}", n), // returns the hexadecimal string of the ethertype
         }
+    }
+}
+
+impl fmt::Display for EthernetFrame {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "EthernetFrame {{\n{} \n  Payload: {} bytes \n}}",
+            self.header,
+            self.payload.len()
+        )
     }
 }
 

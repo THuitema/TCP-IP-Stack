@@ -23,7 +23,9 @@ pub struct IPv4Header {
     options: Option<u32>, // optional (padding added if necessary to make it 32 bits)
 }
 
-
+pub struct IPv4Address {
+    octets: [u8; 4]
+}
 
 impl IPv4Packet {
     pub fn from_bytes(payload: &Vec<u8>) -> Result<IPv4Packet, Error> {
@@ -96,7 +98,19 @@ impl IPv4Packet {
     }
 }
 
+impl IPv4Address {
+    pub fn new(a: u8, b: u8, c: u8, d: u8) -> Self {
+        Self { octets: [a, b, c, d] }
+    }
 
+    pub fn to_u32(&self) -> u32 {
+        u32::from_be_bytes(self.octets)
+    }
+
+    pub fn from_u32(ip: u32) -> Self {
+        Self { octets: ip.to_be_bytes() }
+    }
+}
 
 impl fmt::Display for IPv4Packet {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -147,25 +161,6 @@ impl fmt::Display for IPv4Header {
             self.dest_addr,
             options
         )
-    }
-}
-
-
-pub struct IPv4Address {
-    octets: [u8; 4]
-}
-
-impl IPv4Address {
-    pub fn new(a: u8, b: u8, c: u8, d: u8) -> Self {
-        Self { octets: [a, b, c, d] }
-    }
-
-    pub fn to_u32(&self) -> u32 {
-        u32::from_be_bytes(self.octets)
-    }
-
-    pub fn from_u32(ip: u32) -> Self {
-        Self { octets: ip.to_be_bytes() }
     }
 }
 
