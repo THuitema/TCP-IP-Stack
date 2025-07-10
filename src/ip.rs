@@ -18,10 +18,12 @@ pub struct IPv4Header {
     ttl: u8,              // time to live (8 bits)
     protocol: u8,         // higher-level protocol used (8 bits)
     checksum: u16,        // 16 bits
-    src_addr: u32,        // IP address of source (32 bits)
-    dest_addr: u32,       // IP address of destination (32 bits)
+    src_addr: IPv4Address,    // IP address of source (32 bits)
+    dest_addr: IPv4Address,   // IP address of destination (32 bits)
     options: Option<u32>, // optional (padding added if necessary to make it 32 bits)
 }
+
+
 
 impl IPv4Packet {
     pub fn from_bytes(payload: &Vec<u8>) -> Result<IPv4Packet, Error> {
@@ -42,9 +44,11 @@ impl IPv4Packet {
         let protocol = payload[9];
         let checksum = u16::from_be_bytes([payload[10], payload[11]]);
 
-        // TODO: parse these into IP Addresses, create IPv4 Address struct?
-        let src_addr = u32::from_be_bytes([payload[12], payload[13], payload[14], payload[15]]);
-        let dest_addr = u32::from_be_bytes([payload[16], payload[17], payload[18], payload[19]]);
+        let src_addr_u32 = u32::from_be_bytes([payload[12], payload[13], payload[14], payload[15]]);
+        let dest_addr_u32 = u32::from_be_bytes([payload[16], payload[17], payload[18], payload[19]]);
+        let src_addr_ip = IPv4Address::from_u32(src_addr_u32);
+        let dest_addr_ip = IPv4Address::from_u32(dest_addr_u32);
+        
 
         // Check if there are options and padding
         let options: Option<u32>;
@@ -75,8 +79,8 @@ impl IPv4Packet {
             ttl: ttl,
             protocol: protocol,
             checksum: checksum,
-            src_addr: src_addr,
-            dest_addr: dest_addr,
+            src_addr: src_addr_ip,
+            dest_addr: dest_addr_ip,
             options: options
         };
 
@@ -86,11 +90,13 @@ impl IPv4Packet {
         })
     }
 
-    // TODO
+    // TODO*
     pub fn verify_checksum(&self) -> bool {
         true
     }
 }
+
+
 
 impl fmt::Display for IPv4Packet {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -118,11 +124,6 @@ impl fmt::Display for IPv4Header {
             n => format!("Other ({})", n),
         };
 
-        // TODO: translate IP addresses
-        let source_addr = "";
-        let dest_addr = "";
-
-
         let options = match self.options {
             Some(o) => o.to_string(),
             None => "None".to_string()
@@ -145,6 +146,38 @@ impl fmt::Display for IPv4Header {
             self.src_addr,
             self.dest_addr,
             options
+        )
+    }
+}
+
+
+pub struct IPv4Address {
+    octets: [u8; 4]
+}
+
+impl IPv4Address {
+    pub fn new(a: u8, b: u8, c: u8, d: u8) -> Self {
+        Self { octets: [a, b, c, d] }
+    }
+
+    pub fn to_u32(&self) -> u32 {
+        u32::from_be_bytes(self.octets)
+    }
+
+    pub fn from_u32(ip: u32) -> Self {
+        Self { octets: ip.to_be_bytes() }
+    }
+}
+
+impl fmt::Display for IPv4Address {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}.{}.{}.{}",
+            self.octets[0],
+            self.octets[1],
+            self.octets[2],
+            self.octets[3]
         )
     }
 }
