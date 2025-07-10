@@ -44,7 +44,7 @@ impl fmt::Display for EthernetFrame {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "EthernetFrame {} {{ payload: {} bytes }}",
+            "EthernetFrame {{\n{} \n  Payload: {} bytes \n}}",
             self.header,
             self.payload.len()
         )
@@ -92,7 +92,7 @@ impl fmt::Display for EthernetHeader {
 
         write!(
             f,
-            "{{ ethertype: {}, dest: {:?}, src: {:?} }}",
+            "  Ethertype: {},\n  Destination: {:?},\n  Source: {:?}",
             self.ethertype_to_protocol_name(),
             dest_str,
             src_str
