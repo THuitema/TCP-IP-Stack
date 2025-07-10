@@ -1,23 +1,75 @@
-pub struct IPPacket {
-    header: IPHeader,
-    payload: Vec<u8>
+use pcap::Error;
+
+pub struct IPv4Packet {
+    header: IPv4Header,
+    payload: Vec<u8>,
 }
 
-pub struct IPHeader {
-    version: u8, // IP version (4 bits)
-    header_length: u8, // length of header in 32-bit words (4 bits)
-    tos: u8, // type of service (4 bits)
-    packet_length: u16, // length of packet, including header (16 bits)
-    identification: u16, // ID to reassemble packet, if fragmented (16 bits)
-    flags: u8, // 3 bits
+pub struct IPv4Header {
+    version: u8,          // IP version (4 bits)
+    header_length: u8,    // length of header in 32-bit words (4 bits)
+    type_of_service: u8,  // type of service (8 bits)
+    packet_length: u16,   // length of packet, including header (16 bits)
+    identification: u16,  // ID to reassemble packet, if fragmented (16 bits)
+    flags: u8,            // 3 bits
     offset: u16, // offset (number of bytes divided by 8) from where this data starts in reassembled packet (13 bits)
-    ttl: u8, // time to live (8 bits)
+    ttl: u8,     // time to live (8 bits)
     protocol: u8, // higher-level protocol used (8 bits)
     checksum: u16, // 16 bits
-    src_addr: [u8; 4], // IP address of source (32 bits)
-    dest_addr: [u8; 4], // IP address of destination (32 bits)
-    // TODO: add struct to differentiate IPs between IPv4 and IPv6
+    src_addr: u32, // IP address of source (32 bits)
+    dest_addr: u32, // IP address of destination (32 bits)
+    options: Option<u32>, // optional (up to 32 bits)
+    pad: Option<u32>, // optional (32 bits - options bits)
+}
 
-    options: u32, // optional
-    pad: u32, // optional
+impl IPv4Packet {
+    pub fn from_bytes(payload: &Vec<u8>) -> Result<IPv4Packet, Error> {
+        let version = payload[0] >> 4; // first 4 bits
+
+        if version != 4 {
+            return Err(Error::PcapError(String::from("Packet is not IPv4")));
+        }
+
+        let header_len = payload[0] & 0x0F; // last 4 bits
+        let type_of_service = payload[1];
+        let packet_length = u16::from_be_bytes([payload[2], payload[3]]);
+        let identification = u16::from_be_bytes([payload[4], payload[5]]);
+        let flags = payload[6] >> 5;
+        let offset = u16::from_be_bytes([payload[6] & 0x07, payload[7]]); // last 3 bits of byte 6 plus byte 7
+        let ttl = payload[8];
+        let protocol = payload[9];
+        let checksum = u16::from_be_bytes([payload[10], payload[11]]);
+
+        // TODO: parse these into IP Addresses, create IPv4 Address struct?
+        let src_addr = u32::from_be_bytes([payload[12], payload[13], payload[14], payload[15]]);
+        let dest_addr = u32::from_be_bytes([payload[16], payload[17], payload[18], payload[19]]);
+
+        // TODO: Calculate if there are options and padding
+
+        println!(
+            "version: {:X}, header_len: {:?}, packet_len: {:?}, protocol: {:X}",
+            version, header_len, packet_length, protocol
+        );
+        let header = IPv4Header {
+            version: version,
+            header_length: header_len,
+            type_of_service: type_of_service,
+            packet_length: packet_length,
+            identification: identification,
+            flags: flags,
+            offset: offset,
+            ttl: ttl,
+            protocol: protocol,
+            checksum: checksum,
+            src_addr: src_addr,
+            dest_addr: dest_addr,
+            options: None,
+            pad: None,
+        };
+
+        Ok(IPv4Packet {
+            header: header,
+            payload: payload[20..].to_vec(),
+        })
+    }
 }
