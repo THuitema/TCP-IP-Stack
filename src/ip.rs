@@ -86,15 +86,36 @@ impl IPv4Packet {
             options: options
         };
 
-        Ok(IPv4Packet {
+        let packet = IPv4Packet {
             header: header,
             payload: ip_payload,
-        })
+        };
+
+        match IPv4Packet::verify_checksum(&packet, payload) {
+            true => Ok(packet),
+            false => Err(Error::PcapError(String::from("IPv4 packet rejected (checksum mismatch)")))
+        }
     }
 
-    // TODO*
-    pub fn verify_checksum(&self) -> bool {
-        true
+    fn verify_checksum(&self, payload: &Vec<u8>) -> bool {
+        let mut checksum: u32 = 0;
+
+        // loop over each 16-bit word in header
+        for i in (0..(usize::from(self.header.header_length) * 4)).step_by(2) {
+            if i != 10 {
+                let word = u16::from_be_bytes([payload[i], payload[i+1]]);
+                checksum = checksum.wrapping_add(word as u32) // add one's complement of word
+            }
+        }   
+
+        // add back the overflow bits
+        while (checksum >> 16) != 0 {
+            checksum = (checksum & 0xFFFF) + (checksum >> 16);
+        }
+
+        let result = !(checksum as u16);
+        
+        result == self.header.checksum
     }
 }
 
