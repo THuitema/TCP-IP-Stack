@@ -43,10 +43,7 @@ impl EthernetFrame {
      * Returns bytes of EthernetFrame
      */
     pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
-        let mut buf: Vec<u8> = Vec::new();
-        buf.extend_from_slice(&self.header.dest_addr);
-        buf.extend_from_slice(&self.header.src_addr);
-        buf.extend_from_slice(&self.header.ethertype.to_be_bytes());
+        let mut buf: Vec<u8> = self.header.to_bytes().unwrap();
 
         // verify payload is under 1500 bytes
         if self.payload.len() > 1500 {
@@ -83,6 +80,18 @@ impl EthernetHeader {
             0x86DD => "IPv6".to_string(),
             n => format!("{:X}", n), // returns the hexadecimal string of the ethertype
         }
+    }
+
+    /**
+     * Returns bytes of EthernetHeader
+     */
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        let mut buf: Vec<u8> = Vec::new();
+        buf.extend_from_slice(&self.dest_addr);
+        buf.extend_from_slice(&self.src_addr);
+        buf.extend_from_slice(&self.ethertype.to_be_bytes());
+
+        Ok(buf)
     }
 }
 
