@@ -1,5 +1,6 @@
 mod ethernet;
 mod ip;
+mod icmp;
 use ethernet::{capture_ethernet_frames};
 use ip::IPv4Packet;
 use pcap::{Capture, Device};

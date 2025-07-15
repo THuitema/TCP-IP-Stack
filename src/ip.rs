@@ -1,5 +1,8 @@
+
+
 use pcap::Error;
 use std::fmt;
+
 
 pub struct IPv4Packet {
     header: IPv4Header,
@@ -29,6 +32,8 @@ pub struct IPv4Address {
 
 impl IPv4Packet {
     pub fn from_bytes(payload: &Vec<u8>) -> Result<IPv4Packet, Error> {
+        // TODO: verify payload is 20? bytes. send ICMP packet if not
+
         let version = payload[0] >> 4; // first 4 bits
 
         if version != 4 {
@@ -93,8 +98,11 @@ impl IPv4Packet {
 
         match IPv4Packet::verify_checksum(&packet, payload) {
             true => Ok(packet),
-            false => Err(Error::PcapError(String::from("IPv4 packet rejected (checksum mismatch)")))
+            false => Err(Error::PcapError(String::from("IPv4 packet rejected (checksum mismatch)"))) // TODO: send ICMP packet back to sender
         }
+
+        // TODO: check that TTL is not 0 (send ICMP packet if it is)
+
     }
 
     fn verify_checksum(&self, payload: &Vec<u8>) -> bool {
@@ -114,7 +122,7 @@ impl IPv4Packet {
         }
 
         let result = !(checksum as u16);
-        
+
         result == self.header.checksum
     }
 }
