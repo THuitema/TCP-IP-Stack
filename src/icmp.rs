@@ -1,6 +1,6 @@
 pub struct ICMPPacket {
     header: ICMPHeader,
-    payload: [u8; 576]
+    payload: Vec<u8>
 }
 
 pub struct ICMPHeader {
