@@ -39,7 +39,26 @@ impl EthernetFrame {
         });
     }
 
-    /*
+    /**
+     * Returns bytes of EthernetFrame
+     */
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        let mut buf: Vec<u8> = Vec::new();
+        buf.extend_from_slice(&self.header.dest_addr);
+        buf.extend_from_slice(&self.header.src_addr);
+        buf.extend_from_slice(&self.header.ethertype.to_be_bytes());
+
+        // verify payload is under 1500 bytes
+        if self.payload.len() > 1500 {
+            return Err(Error::PcapError(String::from("Cannot convert ethernet frame to bytes. Payload exceeds 1500 bytes")));
+        }
+
+        buf.extend(&self.payload);
+
+        Ok(buf)
+    }
+
+    /**
      * Sends frame to dest_addr (MAC address of destination)
      */
     pub fn send_frame(&self, capture: &mut Capture<Active>) -> Result<(), Error> {
@@ -47,11 +66,6 @@ impl EthernetFrame {
             Ok(buffer) => capture.sendpacket(buffer),
             Err(e) => Err(e)
          }
-    }
-
-    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
-        // TODO
-        Ok(Vec::new())
     }
 }
 
