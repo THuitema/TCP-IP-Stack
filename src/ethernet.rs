@@ -38,6 +38,21 @@ impl EthernetFrame {
             payload: payload,
         });
     }
+
+    /*
+     * Sends frame to dest_addr (MAC address of destination)
+     */
+    pub fn send_frame(&self, capture: &mut Capture<Active>) -> Result<(), Error> {
+         match self.to_bytes() {
+            Ok(buffer) => capture.sendpacket(buffer),
+            Err(e) => Err(e)
+         }
+    }
+
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        // TODO
+        Ok(Vec::new())
+    }
 }
 
 /**
