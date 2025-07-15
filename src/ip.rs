@@ -10,20 +10,20 @@ pub struct IPv4Packet {
 }
 
 pub struct IPv4Header {
-    version: u8,          // IP version (4 bits)
-    header_length: u8,    // length of header in 32-bit words (4 bits)
-    dscp: u8,             // Differentiated Services Code Point (6 bits)
-    ecn: u8,              // Explicit Congestion Notification (2 bits)
-    packet_length: u16,   // length of packet, including header (16 bits)
-    identification: u16,  // ID to reassemble packet, if fragmented (16 bits)
-    flags: u8,            // 3 bits
-    offset: u16,          // offset (number of bytes divided by 8) from where this data starts in reassembled packet (13 bits)
-    ttl: u8,              // time to live (8 bits)
-    protocol: u8,         // higher-level protocol used (8 bits)
-    checksum: u16,        // 16 bits
+    version: u8,              // IP version (4 bits)
+    ihl: u8,                  // length of header in 32-bit words (4 bits)
+    dscp: u8,                 // Differentiated Services Code Point (6 bits)
+    ecn: u8,                  // Explicit Congestion Notification (2 bits)
+    packet_length: u16,       // length of packet, including header (16 bits)
+    identification: u16,      // ID to reassemble packet, if fragmented (16 bits)
+    flags: u8,                // 3 bits
+    offset: u16,              // offset (number of bytes divided by 8) from where this data starts in reassembled packet (13 bits)
+    ttl: u8,                  // time to live (8 bits)
+    protocol: u8,             // higher-level protocol used (8 bits)
+    checksum: u16,            // 16 bits
     src_addr: IPv4Address,    // IP address of source (32 bits)
     dest_addr: IPv4Address,   // IP address of destination (32 bits)
-    options: Option<u32>, // optional (padding added if necessary to make it 32 bits)
+    options: Option<Vec<u8>>  // optional
 }
 
 pub struct IPv4Address {
@@ -32,15 +32,17 @@ pub struct IPv4Address {
 
 impl IPv4Packet {
     pub fn from_bytes(payload: &Vec<u8>) -> Result<IPv4Packet, Error> {
-        // TODO: verify payload is 20? bytes. send ICMP packet if not
-
+        // Header is at least 20 bytes
+        if payload.len() < 20 {
+            return Err(Error::PcapError(format!("IPv4 packet has insufficient length ({} bytes)", payload.len())))
+        }
         let version = payload[0] >> 4; // first 4 bits
 
         if version != 4 {
             return Err(Error::PcapError(String::from("Packet is not IPv4")));
         }
 
-        let header_len = payload[0] & 0x0F; // last 4 bits
+        let ihl = payload[0] & 0x0F; // last 4 bits
         let dcsp = payload[1] >> 2;
         let ecn = payload[1] & 0x03;
         let packet_length = u16::from_be_bytes([payload[2], payload[3]]);
@@ -58,17 +60,13 @@ impl IPv4Packet {
         
 
         // Check if there are options and padding
-        let options: Option<u32>;
+        let options: Option<Vec<u8>>;
         let ip_payload: Vec<u8>;
 
-        if header_len > 5 {
-            options = Some(u32::from_be_bytes([
-                payload[20],
-                payload[21],
-                payload[22],
-                payload[23],
-            ]));
-            ip_payload = payload[24..].to_vec();
+        let options_len = ihl * 4 - 20;
+        if options_len > 0 {
+            options = Some(payload[20..(20 + options_len) as usize].to_vec());
+            ip_payload = payload[(20 + options_len) as usize..].to_vec();
         } else {
             options = None;
             ip_payload = payload[20..].to_vec();
@@ -76,7 +74,7 @@ impl IPv4Packet {
 
         let header = IPv4Header {
             version: version,
-            header_length: header_len,
+            ihl: ihl,
             dscp: dcsp,
             ecn: ecn,
             packet_length: packet_length,
@@ -109,7 +107,7 @@ impl IPv4Packet {
         let mut checksum: u32 = 0;
 
         // loop over each 16-bit word in header
-        for i in (0..(usize::from(self.header.header_length) * 4)).step_by(2) {
+        for i in (0..(usize::from(self.header.ihl) * 4)).step_by(2) {
             if i != 10 {
                 let word = u16::from_be_bytes([payload[i], payload[i+1]]);
                 checksum = checksum.wrapping_add(word as u32) // add one's complement of word
@@ -167,8 +165,8 @@ impl fmt::Display for IPv4Header {
             n => format!("Other ({})", n),
         };
 
-        let options = match self.options {
-            Some(o) => o.to_string(),
+        let options = match self.options.clone() {
+            Some(o) => format!("{} bytes", o.len()),
             None => "None".to_string()
         };
 
@@ -176,7 +174,7 @@ impl fmt::Display for IPv4Header {
             f,
             "  Version: {},\n  Header Length (in 32-bit words): {} words,\n  Differentiated Services Code Point (DSCP): {},\n  Explicit Congestion Notification (ECN): {},\n  Packet Length: {} bytes,\n  Identification: {},\n  Flags: {},\n  Offset: {},\n  Time to Live: {} seconds,\n  Protocol: {},\n  Checksum: {},\n  Source Address: {},\n  Destination Address: {},\n  Options: {}",
             self.version, 
-            self.header_length, 
+            self.ihl, 
             self.dscp, 
             self.ecn, 
             self.packet_length, 
