@@ -131,3 +131,38 @@ pub fn capture_ethernet_frames(capture: &mut Capture<Active>, count: usize) -> V
 
     frames
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /**
+     * Verify converting frame to bytes and back does not change the frame
+     */
+    #[test]
+    fn test_frame_bytes() {
+        let header = EthernetHeader {
+                dest_addr: [108, 126, 103, 204, 17, 197],
+                src_addr: [200, 167, 10, 144, 9, 72],
+                ethertype: 0x0800 as u16
+        };
+
+        let payload = vec![0x01, 0x02, 0x03, 0x04];
+        let frame = EthernetFrame {
+            header: header,
+            payload: payload
+        };
+
+        println!("{}", frame);
+
+        let frame_bytes = frame.to_bytes().unwrap();
+
+        let frame2 = EthernetFrame::from_bytes(&frame_bytes).unwrap();
+        println!("{}", frame2);
+
+        assert_eq!(frame.payload, frame2.payload);
+        assert_eq!(frame.header.dest_addr, frame2.header.dest_addr);
+        assert_eq!(frame.header.src_addr, frame2.header.src_addr);
+        assert_eq!(frame.header.ethertype, frame2.header.ethertype);
+    }
+}
