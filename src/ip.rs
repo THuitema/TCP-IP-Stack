@@ -48,7 +48,7 @@ impl IPv4Packet {
         let packet_length = u16::from_be_bytes([payload[2], payload[3]]);
         let identification = u16::from_be_bytes([payload[4], payload[5]]);
         let flags = payload[6] >> 5;
-        let offset = u16::from_be_bytes([payload[6] & 0x07, payload[7]]); // last 3 bits of byte 6 plus byte 7
+        let offset = u16::from_be_bytes([payload[6] & 0xF8, payload[7]]); // bottom 5 bits of byte 6 plus byte 7
         let ttl = payload[8];
         let protocol = payload[9];
         let checksum = u16::from_be_bytes([payload[10], payload[11]]);
@@ -172,7 +172,7 @@ impl fmt::Display for IPv4Header {
 
         write!(
             f,
-            "  Version: {},\n  Header Length (in 32-bit words): {} words,\n  Differentiated Services Code Point (DSCP): {},\n  Explicit Congestion Notification (ECN): {},\n  Packet Length: {} bytes,\n  Identification: {},\n  Flags: {},\n  Offset: {},\n  Time to Live: {} seconds,\n  Protocol: {},\n  Checksum: {},\n  Source Address: {},\n  Destination Address: {},\n  Options: {}",
+            "  Version: {},\n  Header Length (in 32-bit words): {} words,\n  Differentiated Services Code Point (DSCP): {},\n  Explicit Congestion Notification (ECN): {},\n  Packet Length: {} bytes,\n  Identification: {},\n  Flags: {},\n  Offset: {} bytes,\n  Time to Live: {} seconds,\n  Protocol: {},\n  Checksum: {},\n  Source Address: {},\n  Destination Address: {},\n  Options: {}",
             self.version, 
             self.ihl, 
             self.dscp, 
@@ -180,7 +180,7 @@ impl fmt::Display for IPv4Header {
             self.packet_length, 
             self.identification, 
             self.flags,
-            self.offset,
+            self.offset * 8,
             self.ttl,
             protocol,
             self.checksum,
