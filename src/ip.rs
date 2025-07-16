@@ -103,6 +103,16 @@ impl IPv4Packet {
 
     }
 
+    /**
+     * Returns bytes of IPv4 Packet
+     */
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        let mut buf = self.header.to_bytes().unwrap();
+        buf.extend(&self.payload);
+
+        Ok(buf)
+    }
+
     fn verify_checksum(&self, payload: &Vec<u8>) -> bool {
         let mut checksum: u32 = 0;
 
@@ -122,6 +132,47 @@ impl IPv4Packet {
         let result = !(checksum as u16);
 
         result == self.header.checksum
+    }
+}
+
+impl IPv4Header {
+    /**
+     * Returns bytes of IPv4 Header
+     */
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        // todo
+        let mut buf: Vec<u8> = Vec::new();
+
+        // version is first 4 bits, ihl is bottom 4
+        buf.push((self.version & 0x0F) << 4 | (self.ihl & 0x0F));
+
+        // dscp is first 6 bits, ecn is bottom 2
+        buf.push((self.dscp & 0xFC) << 2 | (self.ecn & 0x03));
+
+        // packet length, break into 2 bytes
+        buf.extend_from_slice(&u16::to_be_bytes(self.packet_length));
+
+        // identification, break into 2 bytes
+        buf.extend_from_slice(&u16::to_be_bytes(self.identification));
+
+        // flags and offset (2 bytes)
+        let offset_bytes = u16::to_be_bytes(self.offset);
+
+        buf.push((self.flags & 0x07) << 5 | (offset_bytes[0] & 0x1F));
+        buf.push(offset_bytes[1]);
+
+        buf.push(self.ttl);
+        buf.push(self.protocol);
+        buf.extend_from_slice(&u16::to_be_bytes(self.checksum));
+
+        buf.extend_from_slice(&self.src_addr.octets);
+        buf.extend_from_slice(&self.dest_addr.octets);
+
+        if let Some(options) = &self.options {
+            buf.extend(options);
+        }
+
+        Ok(buf)
     }
 }
 
