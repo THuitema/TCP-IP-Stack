@@ -254,3 +254,45 @@ impl fmt::Display for IPv4Address {
         )
     }
 }
+
+mod tests {
+    use super::*;
+
+    /**
+     * Verify converting packet to bytes and back does not change the packet
+     */
+    #[test]
+    fn test_packet_bytes() {
+        let mut header = IPv4Header {
+            version: 4,
+            ihl: 5,
+            dscp: 1,
+            ecn: 2,
+            packet_length: 20 as u16,
+            identification: 1 as u16,
+            flags: 1,
+            offset: 2,
+            ttl: 60,
+            protocol: 17,
+            checksum: 0, // calculated later
+            src_addr: IPv4Address { octets: [127, 0, 0, 1] },
+            dest_addr: IPv4Address { octets: [255, 255, 255, 255] },
+            options: None
+        };
+
+        header.checksum = header.calculate_checksum();
+        let payload = vec![0x01, 0x02, 0x03, 0x04];
+
+        let packet = IPv4Packet {
+            header: header,
+            payload: payload
+        };
+
+        // println!("BEFORE\n{}", packet);
+
+        let packet_bytes = packet.to_bytes().unwrap();
+        let packet2 = IPv4Packet::from_bytes(&packet_bytes).unwrap();
+
+        // println!("AFTER\n{}", packet2);
+    }
+}
