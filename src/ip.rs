@@ -5,8 +5,8 @@ use std::fmt;
 
 
 pub struct IPv4Packet {
-    header: IPv4Header,
-    payload: Vec<u8>,
+    pub header: IPv4Header,
+    pub payload: Vec<u8>,
 }
 
 pub struct IPv4Header {
@@ -212,6 +212,22 @@ impl IPv4Header {
 
         result
     }
+
+    /**
+     * Translate common protocol names
+     */
+    pub fn get_protocol_name(&self) -> String {
+        match self.protocol {
+            1 => "ICMP".to_string(),
+            2 => "IGMP".to_string(),
+            6 => "TCP".to_string(),
+            17 => "UDP".to_string(),
+            41 => "ENCAP".to_string(),
+            89 => "OSPF".to_string(),
+            132 => "SCTP".to_string(),
+            n => format!("Other ({})", n),
+        }
+    }
 }
 
 impl IPv4Address {
@@ -241,19 +257,6 @@ impl fmt::Display for IPv4Packet {
 
 impl fmt::Display for IPv4Header {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-
-        // translate common protocol names
-        let protocol = match self.protocol {
-            1 => "ICMP".to_string(),
-            2 => "IGMP".to_string(),
-            6 => "TCP".to_string(),
-            17 => "UDP".to_string(),
-            41 => "ENCAP".to_string(),
-            89 => "OSPF".to_string(),
-            132 => "SCTP".to_string(),
-            n => format!("Other ({})", n),
-        };
-
         let options = match self.options.clone() {
             Some(o) => format!("{} bytes", o.len()),
             None => "None".to_string()
@@ -271,7 +274,7 @@ impl fmt::Display for IPv4Header {
             self.flags,
             self.offset * 8,
             self.ttl,
-            protocol,
+            self.get_protocol_name(),
             self.checksum,
             self.src_addr,
             self.dest_addr,
