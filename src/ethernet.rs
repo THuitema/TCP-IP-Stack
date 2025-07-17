@@ -78,6 +78,7 @@ impl EthernetHeader {
         match self.ethertype {
             0x0800 => "IPv4".to_string(),
             0x86DD => "IPv6".to_string(),
+            0x0806 => "ARP".to_string(),
             n => format!("{:X}", n), // returns the hexadecimal string of the ethertype
         }
     }
