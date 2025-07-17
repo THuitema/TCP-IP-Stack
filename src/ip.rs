@@ -94,7 +94,7 @@ impl IPv4Packet {
             payload: ip_payload,
         };
 
-        match IPv4Packet::verify_checksum(&packet, payload) {
+        match IPv4Packet::verify_checksum(&packet) {
             true => Ok(packet),
             false => Err(Error::PcapError(String::from("IPv4 packet rejected (checksum mismatch)"))) // TODO: send ICMP packet back to sender
         }
@@ -113,25 +113,9 @@ impl IPv4Packet {
         Ok(buf)
     }
 
-    fn verify_checksum(&self, payload: &Vec<u8>) -> bool {
-        let mut checksum: u32 = 0;
-
-        // loop over each 16-bit word in header
-        for i in (0..(usize::from(self.header.ihl) * 4)).step_by(2) {
-            if i != 10 {
-                let word = u16::from_be_bytes([payload[i], payload[i+1]]);
-                checksum = checksum.wrapping_add(word as u32) // add one's complement of word
-            }
-        }   
-
-        // add back the overflow bits
-        while (checksum >> 16) != 0 {
-            checksum = (checksum & 0xFFFF) + (checksum >> 16);
-        }
-
-        let result = !(checksum as u16);
-
-        result == self.header.checksum
+    fn verify_checksum(&self) -> bool {
+        let calculated_checksum = self.header.calculate_checksum();
+        calculated_checksum == self.header.checksum
     }
 }
 
@@ -342,11 +326,11 @@ mod tests {
             payload: payload
         };
 
-        // println!("BEFORE\n{}", packet);
+        println!("BEFORE\n{}", packet);
 
         let packet_bytes = packet.to_bytes().unwrap();
         let packet2 = IPv4Packet::from_bytes(&packet_bytes).unwrap();
 
-        // println!("AFTER\n{}", packet2);
+        println!("AFTER\n{}", packet2);
     }
 }
