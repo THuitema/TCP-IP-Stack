@@ -31,8 +31,7 @@ impl ICMPPacket {
             content: u32::from_be_bytes([data[4], data[5], data[6], data[7]])
         };
 
-        // todo verify checksum like IPv4 packets
-        Ok(ICMPPacket { 
+        let packet = ICMPPacket { 
             header: header, 
             payload: data[8..].to_vec()
         })
