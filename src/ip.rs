@@ -3,11 +3,11 @@ use std::fmt;
 
 
 pub struct IPv4Packet {
-    pub header: IPv4Header,
-    pub payload: Vec<u8>,
+    header: IPv4Header,
+    payload: Vec<u8>,
 }
 
-pub struct IPv4Header {
+struct IPv4Header {
     version: u8,              // IP version (4 bits)
     ihl: u8,                  // length of header in 32-bit words (4 bits)
     dscp: u8,                 // Differentiated Services Code Point (6 bits)
@@ -19,11 +19,12 @@ pub struct IPv4Header {
     ttl: u8,                  // time to live (8 bits)
     protocol: u8,             // higher-level protocol used (8 bits)
     checksum: u16,            // 16 bits
-    pub src_addr: IPv4Address,    // IP address of source (32 bits)
-    pub dest_addr: IPv4Address,   // IP address of destination (32 bits)
+    src_addr: IPv4Address,    // IP address of source (32 bits)
+    dest_addr: IPv4Address,   // IP address of destination (32 bits)
     options: Option<Vec<u8>>  // optional
 }
 
+#[derive(Copy, Clone)]
 pub struct IPv4Address {
     octets: [u8; 4]
 }
@@ -109,6 +110,34 @@ impl IPv4Packet {
         buf.extend(&self.payload);
 
         Ok(buf)
+    }
+
+    /**
+     * Translate common protocol names
+     */
+    pub fn get_protocol_name(&self) -> String {
+        self.header.get_protocol_name()
+    }
+
+    /**
+     * Getter for source address
+     */
+    pub fn src_addr(&self) -> IPv4Address {
+        self.header.src_addr.clone()
+    }
+
+    /**
+     * Getter for destination address
+     */
+    pub fn dest_addr(&self) -> IPv4Address {
+        self.header.src_addr.clone()
+    }
+
+    /**
+     * Getter for payload
+     */
+    pub fn payload(&self) -> Vec<u8> {
+        self.payload.clone()
     }
 
     fn verify_checksum(&self) -> bool {
@@ -214,7 +243,7 @@ impl IPv4Header {
     /**
      * Translate common protocol names
      */
-    pub fn get_protocol_name(&self) -> String {
+    fn get_protocol_name(&self) -> String {
         match self.protocol {
             1 => "ICMP".to_string(),
             2 => "IGMP".to_string(),
@@ -226,6 +255,7 @@ impl IPv4Header {
             n => format!("Other ({})", n),
         }
     }
+
 }
 
 impl IPv4Address {
