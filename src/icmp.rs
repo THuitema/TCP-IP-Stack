@@ -157,3 +157,40 @@ pub fn process_icmp(packet: &ParsedPacket) -> Result<(), Error> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /**
+     * Verify converting packet to bytes and back does not change it
+     */
+    #[test]
+    fn test_icmp_packet() {
+        let header = ICMPHeader {
+            icmp_type: 8,
+            code: 0,
+            checksum: 0,
+            content: 987654321
+        };
+
+        let mut packet = ICMPPacket {
+            header: header,
+            payload: vec![0x01, 0x02, 0x03, 0x04]
+        };
+
+        packet.header.checksum = packet.calculate_checksum();
+        let packet_bytes = packet.to_bytes().unwrap();
+
+        let packet2 = ICMPPacket::from_bytes(&packet_bytes).unwrap();
+
+        println!("Packet 1:\n{}", packet);
+        println!("Packet 2:\n{}", packet2);
+        
+        assert_eq!(packet.payload, packet2.payload);
+        assert_eq!(packet.header.icmp_type, packet2.header.icmp_type);
+        assert_eq!(packet.header.code, packet2.header.code);
+        assert_eq!(packet.header.checksum, packet2.header.checksum);
+        assert_eq!(packet.header.content, packet2.header.content);
+    }
+}
