@@ -3,14 +3,19 @@ use std::convert::TryInto;
 use std::fmt;
 
 pub struct EthernetFrame {
-    pub header: EthernetHeader,
-    pub payload: Vec<u8>,
+    header: EthernetHeader,
+    payload: Vec<u8>,
 }
 
-pub struct EthernetHeader {
-    pub dest_addr: [u8; 6], // destination MAC address (6 bytes)
-    pub src_addr: [u8; 6],  // source MAC address (6 bytes)
-    pub ethertype: u16,     // protocol used in the packet payload (e.g. IPv4) (2 bytes)
+struct EthernetHeader {
+    dest_addr: MACAddress, // destination MAC address (6 bytes)
+    src_addr: MACAddress,  // source MAC address (6 bytes)
+    ethertype: u16,        // protocol used in the packet payload (e.g. IPv4) (2 bytes)
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct MACAddress {
+    octets: [u8; 6]
 }
 
 impl EthernetFrame {
@@ -26,8 +31,8 @@ impl EthernetFrame {
         ethertype_bytes.copy_from_slice(&data[12..14]);
 
         let header = EthernetHeader {
-            dest_addr: data[0..6].try_into().unwrap(),
-            src_addr: data[6..12].try_into().unwrap(),
+            dest_addr: MACAddress::from_slice(data[0..6].try_into().unwrap()),
+            src_addr: MACAddress::from_slice(data[6..12].try_into().unwrap()),
             ethertype: u16::from_be_bytes(ethertype_bytes),
         };
 
@@ -64,6 +69,35 @@ impl EthernetFrame {
             Err(e) => Err(e)
          }
     }
+
+    /**
+     * Returns the protocol name (if available) of the ethertype
+     * Full list is available here: https://en.wikipedia.org/wiki/EtherType
+     */
+    pub fn ethertype_to_protocol_name(&self) -> String {
+        self.header.ethertype_to_protocol_name()
+    }
+
+    /**
+     * Getter for destination MAC address
+     */
+    pub fn dest_addr(&self) -> MACAddress {
+        self.header.dest_addr.clone()
+    }
+
+    /**
+     * Getter for source MAC address
+     */
+    pub fn src_addr(&self) -> MACAddress {
+        self.header.src_addr.clone()
+    }
+
+    /**
+     * Getter for payload
+     */
+    pub fn payload(&self) -> Vec<u8> {
+        self.payload.clone()
+    }
 }
 
 /**
@@ -74,7 +108,7 @@ impl EthernetHeader {
      * Returns the protocol name (if available) of the ethertype
      * Full list is available here: https://en.wikipedia.org/wiki/EtherType
      */
-    pub fn ethertype_to_protocol_name(&self) -> String {
+    fn ethertype_to_protocol_name(&self) -> String {
         match self.ethertype {
             0x0800 => "IPv4".to_string(),
             0x86DD => "IPv6".to_string(),
@@ -88,11 +122,21 @@ impl EthernetHeader {
      */
     pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut buf: Vec<u8> = Vec::new();
-        buf.extend_from_slice(&self.dest_addr);
-        buf.extend_from_slice(&self.src_addr);
+        buf.extend_from_slice(&self.dest_addr.octets);
+        buf.extend_from_slice(&self.src_addr.octets);
         buf.extend_from_slice(&self.ethertype.to_be_bytes());
 
         Ok(buf)
+    }
+}
+
+impl MACAddress {
+    pub fn new(a: u8, b: u8, c: u8, d: u8, e: u8, f: u8) -> Self {
+        Self { octets: [a, b, c, d, e, f] }
+    }
+
+    pub fn from_slice(slice: [u8; 6]) -> Self {
+        Self {octets: slice}
     }
 }
 
@@ -109,32 +153,27 @@ impl fmt::Display for EthernetFrame {
 
 impl fmt::Display for EthernetHeader {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let dest_str = format!(
-            "{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}",
-            self.dest_addr[0],
-            self.dest_addr[1],
-            self.dest_addr[2],
-            self.dest_addr[3],
-            self.dest_addr[4],
-            self.dest_addr[5]
-        );
-
-        let src_str = format!(
-            "{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}",
-            self.src_addr[0],
-            self.src_addr[1],
-            self.src_addr[2],
-            self.src_addr[3],
-            self.src_addr[4],
-            self.src_addr[5]
-        );
-
         write!(
             f,
-            "  Ethertype: {},\n  Destination: {:?},\n  Source: {:?}",
+            "  Ethertype: {},\n  Destination: {},\n  Source: {}",
             self.ethertype_to_protocol_name(),
-            dest_str,
-            src_str
+            self.dest_addr,
+            self.src_addr
+        )
+    }
+}
+
+impl fmt::Display for MACAddress {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{:02X}:{:02X}:{:02X}:{:02X}:{:02X}:{:02X}",
+            self.octets[0],
+            self.octets[1],
+            self.octets[2],
+            self.octets[3],
+            self.octets[4],
+            self.octets[5]
         )
     }
 }
@@ -166,8 +205,8 @@ mod tests {
     #[test]
     fn test_frame_bytes() {
         let header = EthernetHeader {
-                dest_addr: [108, 126, 103, 204, 17, 197],
-                src_addr: [200, 167, 10, 144, 9, 72],
+                dest_addr: MACAddress::new(108, 126, 103, 204, 17, 197),
+                src_addr: MACAddress::new(200, 167, 10, 144, 9, 72),
                 ethertype: 0x0800 as u16
         };
 
@@ -185,8 +224,8 @@ mod tests {
         println!("{}", frame2);
 
         assert_eq!(frame.payload, frame2.payload);
-        assert_eq!(frame.header.dest_addr, frame2.header.dest_addr);
-        assert_eq!(frame.header.src_addr, frame2.header.src_addr);
+        assert_eq!(frame.dest_addr(), frame2.dest_addr());
+        assert_eq!(frame.src_addr(), frame2.src_addr());
         assert_eq!(frame.header.ethertype, frame2.header.ethertype);
     }
 }
