@@ -49,7 +49,7 @@ impl ICMPPacket {
         let mut checksum: u32 = 0;
 
         let mut word = u16::from_be_bytes([self.header.icmp_type, self.header.code]);
-        checksum = checksum.wrapping_add(self.header.icmp_type as u32);
+        checksum = checksum.wrapping_add(word as u32);
 
         let content_bytes = u32::to_be_bytes(self.header.content);
 
