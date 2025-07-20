@@ -3,6 +3,7 @@ mod ethernet;
 mod ip;
 mod icmp;
 mod parse;
+mod utils;
 use parse::parse;
 use pcap::{Active, Capture, Device};
 use crate::icmp::process_icmp;
@@ -43,30 +44,3 @@ fn capture_loop(capture: &mut Capture<Active>, size: usize) {
         }
     }
 }
-
-
-fn get_devices() {
-    let devices = Device::list().unwrap();
-    println!("{} devices found!", devices.len());
-
-    for device in &devices {
-        println!("Name: {:?}", device.name);
-        if let Some(desc) = &device.desc {
-            println!("Desc: {:?}", desc);
-        }
-
-        for addr in &device.addresses {
-            println!("  IP: {:?}", addr.addr);
-            println!("  Netmask: {:?}", addr.netmask);
-        }
-    }
-}
-
-/*
-Device {
-    name: String
-    desc: Option<String>
-    addresses: Vec<Address>
-    tags: DeviceFlags
-}
-*/
