@@ -1,5 +1,3 @@
-
-
 use pcap::Error;
 use std::fmt;
 
@@ -21,8 +19,8 @@ pub struct IPv4Header {
     ttl: u8,                  // time to live (8 bits)
     protocol: u8,             // higher-level protocol used (8 bits)
     checksum: u16,            // 16 bits
-    src_addr: IPv4Address,    // IP address of source (32 bits)
-    dest_addr: IPv4Address,   // IP address of destination (32 bits)
+    pub src_addr: IPv4Address,    // IP address of source (32 bits)
+    pub dest_addr: IPv4Address,   // IP address of destination (32 bits)
     options: Option<Vec<u8>>  // optional
 }
 

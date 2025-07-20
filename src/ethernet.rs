@@ -8,9 +8,9 @@ pub struct EthernetFrame {
 }
 
 pub struct EthernetHeader {
-    dest_addr: [u8; 6], // destination MAC address (6 bytes)
-    src_addr: [u8; 6],  // source MAC address (6 bytes)
-    ethertype: u16,     // protocol used in the packet payload (e.g. IPv4) (2 bytes)
+    pub dest_addr: [u8; 6], // destination MAC address (6 bytes)
+    pub src_addr: [u8; 6],  // source MAC address (6 bytes)
+    pub ethertype: u16,     // protocol used in the packet payload (e.g. IPv4) (2 bytes)
 }
 
 impl EthernetFrame {
