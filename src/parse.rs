@@ -5,13 +5,13 @@ use std::time::{SystemTime};
 use chrono::{DateTime, Local};
 
 pub struct ParsedPacket {
-    timestamp: SystemTime,
-    ethernet: EthernetFrame,
-    ipv4: IPv4Packet,
-    transport: Transport,
+    pub timestamp: SystemTime,
+    pub ethernet: EthernetFrame,
+    pub ipv4: IPv4Packet,
+    pub transport: Transport,
 }
 
-enum Transport {
+pub enum Transport {
     ICMP(ICMPPacket)
 }
 
