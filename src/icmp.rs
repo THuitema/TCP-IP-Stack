@@ -8,7 +8,7 @@ pub struct ICMPPacket {
     payload: Vec<u8>
 }
 
-pub struct ICMPHeader {
+struct ICMPHeader {
     icmp_type: u8,
     code: u8,
     checksum: u16,
@@ -16,6 +16,23 @@ pub struct ICMPHeader {
 }
 
 impl ICMPPacket {
+    pub fn new(icmp_type: u8, code: u8, content: u32, payload: Vec<u8>) -> Self {
+        let header = ICMPHeader {
+            icmp_type: icmp_type,
+            code: code,
+            checksum: 0,
+            content: content
+        };
+
+        let mut packet = Self {
+            header: header,
+            payload: payload
+        };
+
+        packet.header.checksum = packet.calculate_checksum();
+        packet
+    }
+
     /**
      * Converts raw bytes to an ICMPPacket
      */
@@ -34,7 +51,13 @@ impl ICMPPacket {
         let packet = ICMPPacket { 
             header: header, 
             payload: data[8..].to_vec()
-        })
+        };
+
+        if packet.header.checksum != packet.calculate_checksum() {
+            return Err(Error::PcapError("ICMP packet checksum mismatch".to_string()));
+        }
+
+        Ok(packet)
     }
 
     /**
@@ -134,24 +157,30 @@ pub fn process_icmp(packet: &ParsedPacket) -> Result<(), Error> {
     let datetime: DateTime<Local> = packet.timestamp.into();
     let time_formatted = datetime.format("%H:%M").to_string();
 
+
+    // *** TODO:
+    // rewrite print statements to match log format of parse.rs
+    // write a "ping" function to send ping packets to a (hardcoded for now) address (IP + MAC of other laptop)
+    // process: send echo request packet -> start timer & wait -> receive echo reply with correct identifier & seq_num -> print log with timestamp -> send next, or stop after max seq_num
+    // research if this process is correct (does ping wait to receive reply before sending next request? maybe there is a timeout?)
     match tcmp_packet.header.icmp_type {
         0 => {
             // echo reply (you sent the ping)
             let identifier: u16 = (tcmp_packet.header.content >> 16) as u16;
             let seq_num: u16 = (tcmp_packet.header.content & 0xFF) as u16;
 
-            println!("[{}] Ping reply from {}: icmp_seq={} identifier={}", time_formatted, packet.ipv4.header.src_addr, seq_num, identifier);
+            println!("[{}] Ping reply from {}: icmp_seq={} identifier={}", time_formatted, packet.ipv4.src_addr(), seq_num, identifier);
             Ok(())
         },
         8 => {
             // echo request (they sent the ping)
             let identifier: u16 = (tcmp_packet.header.content >> 16) as u16;
             let seq_num: u16 = (tcmp_packet.header.content & 0xFF) as u16;
-            println!("[{}] Ping request from {}: icmp_seq={} identifier={}", time_formatted, packet.ipv4.header.src_addr, seq_num, identifier);
+            println!("[{}] Ping request from {}: icmp_seq={} identifier={}", time_formatted, packet.ipv4.src_addr(), seq_num, identifier);
             Ok(())
         },
         n => {
-            println!("[{}] ICMP packet received from {}: type={} code={}", time_formatted, packet.ipv4.header.src_addr, n, tcmp_packet.header.code);
+            println!("[{}] ICMP packet received from {}: type={} code={}", time_formatted, packet.ipv4.src_addr(), n, tcmp_packet.header.code);
             Ok(())
         }
     }
