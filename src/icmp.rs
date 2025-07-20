@@ -1,5 +1,7 @@
 use pcap::Error;
 use std::fmt;
+use crate::parse::{ParsedPacket, Transport};
+use chrono::{DateTime, Local};
 
 pub struct ICMPPacket {
     header: ICMPHeader,
@@ -127,3 +129,31 @@ impl fmt::Display for ICMPHeader {
     }
 }
 
+pub fn process_icmp(packet: &ParsedPacket) -> Result<(), Error> {
+    // check type for echo reply & request --> parse content & payload
+    let Transport::ICMP(tcmp_packet) = &packet.transport;
+    let datetime: DateTime<Local> = packet.timestamp.into();
+    let time_formatted = datetime.format("%H:%M").to_string();
+
+    match tcmp_packet.header.icmp_type {
+        0 => {
+            // echo reply (you sent the ping)
+            let identifier: u16 = (tcmp_packet.header.content >> 16) as u16;
+            let seq_num: u16 = (tcmp_packet.header.content & 0xFF) as u16;
+
+            println!("[{}] Ping reply from {}: icmp_seq={} identifier={}", time_formatted, packet.ipv4.header.src_addr, seq_num, identifier);
+            Ok(())
+        },
+        8 => {
+            // echo request (they sent the ping)
+            let identifier: u16 = (tcmp_packet.header.content >> 16) as u16;
+            let seq_num: u16 = (tcmp_packet.header.content & 0xFF) as u16;
+            println!("[{}] Ping request from {}: icmp_seq={} identifier={}", time_formatted, packet.ipv4.header.src_addr, seq_num, identifier);
+            Ok(())
+        },
+        n => {
+            println!("[{}] ICMP packet received from {}: type={} code={}", time_formatted, packet.ipv4.header.src_addr, n, tcmp_packet.header.code);
+            Ok(())
+        }
+    }
+}

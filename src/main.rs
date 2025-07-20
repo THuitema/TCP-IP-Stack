@@ -5,6 +5,7 @@ mod icmp;
 mod parse;
 use parse::parse;
 use pcap::{Active, Capture, Device};
+use crate::icmp::process_icmp;
 
 fn main() {
     let device = Device::lookup().unwrap().unwrap();
@@ -28,6 +29,11 @@ fn capture_loop(capture: &mut Capture<Active>, size: usize) {
             Ok(packet) => {
                 // print some log
                 println!("{}", packet);
+                
+                match process_icmp(&packet) {
+                    Ok(_) => (),
+                    Err(e) => eprintln!("{}", e)
+                }
             },
             Err(e) => eprintln!("{}", e)
         } 
