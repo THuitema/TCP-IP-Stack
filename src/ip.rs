@@ -307,6 +307,19 @@ impl IPProtocol {
         }
     }
 
+    pub fn from_str(s: &str) -> Result<Self, Error> {
+        match s {
+            "ICMP" => Ok(IPProtocol::ICMP),
+            "IGMP" => Ok(IPProtocol::IGMP),
+            "TCP" => Ok(IPProtocol::TCP),
+            "UDP" => Ok(IPProtocol::UDP),
+            "ENCAP" => Ok(IPProtocol::ENCAP),
+            "OSPF" => Ok(IPProtocol::OSPF),
+            "SCTP" => Ok(IPProtocol::SCTP),
+            s => Err(Error::PcapError(format!("Unknown IPv4 protocol specified: {}", s))), 
+        }
+    }
+
     pub fn to_u8(&self) -> u8 {
         match self {
             IPProtocol::ICMP => 1,
