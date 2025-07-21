@@ -153,7 +153,11 @@ impl fmt::Display for ICMPHeader {
 
 pub fn process_icmp(packet: &ParsedPacket) -> Result<(), Error> {
     // check type for echo reply & request --> parse content & payload
-    let Transport::ICMP(tcmp_packet) = &packet.transport;
+    let icmp_packet = match &packet.transport {
+        Transport::ICMP(pack) => pack,
+        _ => return Err(Error::PcapError("(process_icmp) invalid ParsedPacket provided. Transport protocol is not ICMP".to_string()))
+    };
+    // let Transport::ICMP(icmp_packet) = &packet.transport;
     let datetime: DateTime<Local> = packet.timestamp.into();
     let time_formatted = datetime.format("%H:%M").to_string();
 
@@ -163,24 +167,24 @@ pub fn process_icmp(packet: &ParsedPacket) -> Result<(), Error> {
     // write a "ping" function to send ping packets to a (hardcoded for now) address (IP + MAC of other laptop)
     // process: send echo request packet -> start timer & wait -> receive echo reply with correct identifier & seq_num -> print log with timestamp -> send next, or stop after max seq_num
     // research if this process is correct (does ping wait to receive reply before sending next request? maybe there is a timeout?)
-    match tcmp_packet.header.icmp_type {
+    match icmp_packet.header.icmp_type {
         0 => {
             // echo reply (you sent the ping)
-            let identifier: u16 = (tcmp_packet.header.content >> 16) as u16;
-            let seq_num: u16 = (tcmp_packet.header.content & 0xFF) as u16;
+            let identifier: u16 = (icmp_packet.header.content >> 16) as u16;
+            let seq_num: u16 = (icmp_packet.header.content & 0xFF) as u16;
 
             println!("[{}] Ping reply from {}: icmp_seq={} identifier={}", time_formatted, packet.ipv4.src_addr(), seq_num, identifier);
             Ok(())
         },
         8 => {
             // echo request (they sent the ping)
-            let identifier: u16 = (tcmp_packet.header.content >> 16) as u16;
-            let seq_num: u16 = (tcmp_packet.header.content & 0xFF) as u16;
+            let identifier: u16 = (icmp_packet.header.content >> 16) as u16;
+            let seq_num: u16 = (icmp_packet.header.content & 0xFF) as u16;
             println!("[{}] Ping request from {}: icmp_seq={} identifier={}", time_formatted, packet.ipv4.src_addr(), seq_num, identifier);
             Ok(())
         },
         n => {
-            println!("[{}] ICMP packet received from {}: type={} code={}", time_formatted, packet.ipv4.src_addr(), n, tcmp_packet.header.code);
+            println!("[{}] ICMP packet received from {}: type={} code={}", time_formatted, packet.ipv4.src_addr(), n, icmp_packet.header.code);
             Ok(())
         }
     }
