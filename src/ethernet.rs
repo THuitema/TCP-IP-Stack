@@ -19,6 +19,18 @@ pub struct MACAddress {
 }
 
 impl EthernetFrame {
+    pub fn new(src_addr: MACAddress, dest_addr: MACAddress, ethertype: u16, payload: Vec<u8>) -> Self {
+        let header = EthernetHeader {
+            dest_addr: dest_addr,
+            src_addr: src_addr,
+            ethertype: ethertype
+        };
+
+        Self {
+            header: header,
+            payload: payload
+        }
+    }
     /**
      * Converts raw bytes to an EthernetFrame, if the bytes are valid
      */
