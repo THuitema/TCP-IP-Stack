@@ -28,7 +28,7 @@ impl fmt::Display for ParsedPacket {
             self.ethernet.dest_addr(),
             self.ipv4.src_addr(),
             self.ipv4.dest_addr(),
-            self.ipv4.get_protocol_name()
+            self.ipv4.protocol_name()
         )
     }
 }
@@ -49,7 +49,7 @@ pub fn parse(captured_frame: Packet) -> Result<ParsedPacket, Error> {
         return Err(Error::PcapError(format!("(parse) network layer \"{}\" packets not yet supported", network_protocol)))
     }
 
-    let transport_protocol = ip_packet.get_protocol_name();
+    let transport_protocol = ip_packet.protocol_name();
 
     if transport_protocol == "ICMP" {
         transport_packet = Transport::ICMP(ICMPPacket::from_bytes(&ip_packet.payload())?);

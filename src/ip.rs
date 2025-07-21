@@ -17,7 +17,7 @@ struct IPv4Header {
     flags: u8,                // 3 bits
     offset: u16,              // offset (number of bytes divided by 8) from where this data starts in reassembled packet (13 bits)
     ttl: u8,                  // time to live (8 bits)
-    protocol: u8,             // higher-level protocol used (8 bits)
+    protocol: IPProtocol,     // higher-level protocol used (8 bits)
     checksum: u16,            // 16 bits
     src_addr: IPv4Address,    // IP address of source (32 bits)
     dest_addr: IPv4Address,   // IP address of destination (32 bits)
@@ -29,7 +29,45 @@ pub struct IPv4Address {
     octets: [u8; 4]
 }
 
+pub enum IPProtocol {
+    ICMP = 1,
+    IGMP = 2,
+    TCP = 6,
+    UDP = 17,
+    ENCAP = 41,
+    OSPF = 89,
+    SCTP = 132
+}
+
 impl IPv4Packet {
+    /**
+     * Returns a default IPv4 packet given the minimum required fields
+     */
+    pub fn new(src_addr: IPv4Address, dest_addr: IPv4Address, protocol: IPProtocol, payload: Vec<u8>) -> Self {
+        let mut header = IPv4Header {
+            version: 4,
+            ihl: 5,
+            dscp: 0,
+            ecn: 0,
+            packet_length: 20 + payload.len() as u16,
+            identification: 0,
+            flags: 0,
+            offset: 0,
+            ttl: 64,
+            protocol: protocol,
+            checksum: 0,
+            src_addr: src_addr,
+            dest_addr: dest_addr,
+            options: None
+        };
+        header.checksum = header.calculate_checksum();
+
+        Self {
+            header: header,
+            payload: payload
+        }
+    }
+
     pub fn from_bytes(payload: &Vec<u8>) -> Result<IPv4Packet, Error> {
         // Header is at least 20 bytes
         if payload.len() < 20 {
@@ -49,7 +87,7 @@ impl IPv4Packet {
         let flags = payload[6] >> 5;
         let offset = u16::from_be_bytes([payload[6] & 0x1F, payload[7]]); // bottom 5 bits of byte 6 plus byte 7
         let ttl = payload[8];
-        let protocol = payload[9];
+        let protocol = IPProtocol::from_u8(payload[9])?;
         let checksum = u16::from_be_bytes([payload[10], payload[11]]);
 
         let src_addr_u32 = u32::from_be_bytes([payload[12], payload[13], payload[14], payload[15]]);
@@ -113,10 +151,10 @@ impl IPv4Packet {
     }
 
     /**
-     * Translate common protocol names
+     * Returns protocol name
      */
-    pub fn get_protocol_name(&self) -> String {
-        self.header.get_protocol_name()
+    pub fn protocol_name(&self) -> String {
+        self.header.protocol.to_string()
     }
 
     /**
@@ -172,7 +210,7 @@ impl IPv4Header {
         buf.push(offset_bytes[1]);
 
         buf.push(self.ttl);
-        buf.push(self.protocol);
+        buf.push(self.protocol.to_u8());
         buf.extend_from_slice(&u16::to_be_bytes(self.checksum));
 
         buf.extend_from_slice(&self.src_addr.octets);
@@ -204,7 +242,7 @@ impl IPv4Header {
         word = u16::from_be_bytes([(self.flags & 0x07) << 5 | (offset_bytes[0] & 0x1F), offset_bytes[1]]);
         checksum = checksum.wrapping_add(word as u32);
 
-        word = u16::from_be_bytes([self.ttl, self.protocol]);
+        word = u16::from_be_bytes([self.ttl, self.protocol.to_u8()]);
         checksum = checksum.wrapping_add(word as u32);
 
         // Source and Destination IP addresses
@@ -239,23 +277,6 @@ impl IPv4Header {
 
         result
     }
-
-    /**
-     * Translate common protocol names
-     */
-    fn get_protocol_name(&self) -> String {
-        match self.protocol {
-            1 => "ICMP".to_string(),
-            2 => "IGMP".to_string(),
-            6 => "TCP".to_string(),
-            17 => "UDP".to_string(),
-            41 => "ENCAP".to_string(),
-            89 => "OSPF".to_string(),
-            132 => "SCTP".to_string(),
-            n => format!("Other ({})", n),
-        }
-    }
-
 }
 
 impl IPv4Address {
@@ -270,6 +291,46 @@ impl IPv4Address {
     pub fn from_u32(ip: u32) -> Self {
         Self { octets: ip.to_be_bytes() }
     }
+}
+
+impl IPProtocol {
+    pub fn from_u8(n: u8) -> Result<Self, Error> {
+        match n {
+            1 => Ok(IPProtocol::ICMP),
+            2 => Ok(IPProtocol::IGMP),
+            6 => Ok(IPProtocol::TCP),
+            17 => Ok(IPProtocol::UDP),
+            41 => Ok(IPProtocol::ENCAP),
+            89 => Ok(IPProtocol::OSPF),
+            132 => Ok(IPProtocol::SCTP),
+            n => Err(Error::PcapError(format!("Unknown IPv4 protocol specified: {}", n))), 
+        }
+    }
+
+    pub fn to_u8(&self) -> u8 {
+        match self {
+            IPProtocol::ICMP => 1,
+            IPProtocol::IGMP => 2,
+            IPProtocol::TCP => 6,
+            IPProtocol::UDP => 17,
+            IPProtocol::ENCAP => 41,
+            IPProtocol::OSPF => 89,
+            IPProtocol::SCTP => 132,
+        }
+    }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            IPProtocol::ICMP => "ICMP".to_string(),
+            IPProtocol::IGMP => "IGMP".to_string(),
+            IPProtocol::TCP => "TCP".to_string(),
+            IPProtocol::UDP => "UDP".to_string(),
+            IPProtocol::ENCAP => "ENCAP".to_string(),
+            IPProtocol::OSPF => "OSPF".to_string(),
+            IPProtocol::SCTP => "SCTP".to_string(),
+        }
+    }
+
 }
 
 impl fmt::Display for IPv4Packet {
@@ -302,7 +363,7 @@ impl fmt::Display for IPv4Header {
             self.flags,
             self.offset * 8,
             self.ttl,
-            self.get_protocol_name(),
+            self.protocol.to_string(),
             self.checksum,
             self.src_addr,
             self.dest_addr,
@@ -342,7 +403,7 @@ mod tests {
             flags: 1,
             offset: 2,
             ttl: 60,
-            protocol: 17,
+            protocol: IPProtocol::from_u8(17).unwrap(),
             checksum: 0, // calculated later
             src_addr: IPv4Address { octets: [127, 0, 0, 1] },
             dest_addr: IPv4Address { octets: [255, 255, 255, 255] },
