@@ -69,6 +69,9 @@ impl ICMPPacket {
         Ok(buf)
     }
 
+    /**
+     * Assumes checksum field is set to zero prior to calling this function
+     */
     pub fn calculate_checksum(&self) -> u16 {
         let mut checksum: u32 = 0;
 
@@ -85,10 +88,8 @@ impl ICMPPacket {
 
         // add each 16-bit word in payload
         for i in (0..self.payload.len()).step_by(2) {
-            if i != 10 {
-                word = u16::from_be_bytes([self.payload[i], self.payload[i+1]]);
-                checksum = checksum.wrapping_add(word as u32) // add one's complement of word
-            }
+            word = u16::from_be_bytes([self.payload[i], self.payload[i+1]]);
+            checksum = checksum.wrapping_add(word as u32) // add one's complement of word
         }   
 
         // add back the overflow bits
@@ -144,9 +145,10 @@ impl fmt::Display for ICMPHeader {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "  Type: {},\n  Code: {},",
+            "  Type: {},\n  Code: {}, Checksum: {}",
             self.get_type_name(),
-            self.code
+            self.code,
+            self.checksum
         )
     }
 }
