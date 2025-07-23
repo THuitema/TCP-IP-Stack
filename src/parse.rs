@@ -12,7 +12,9 @@ pub struct ParsedPacket {
 }
 
 pub enum Transport {
-    ICMP(ICMPPacket)
+    ICMP(ICMPPacket),
+    UDP,
+    TCP
 }
 
 impl fmt::Display for ParsedPacket {
