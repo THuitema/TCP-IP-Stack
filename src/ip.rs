@@ -182,6 +182,10 @@ impl IPv4Packet {
         self.payload = payload;
     }
 
+    pub fn ttl(&self) -> u8 {
+        self.header.ttl
+    }
+
     fn verify_checksum(&self) -> bool {
         let calculated_checksum = self.header.calculate_checksum();
         calculated_checksum == self.header.checksum
