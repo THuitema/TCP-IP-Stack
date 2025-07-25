@@ -13,15 +13,7 @@ use utils::ping;
 use icmp::process_icmp;
 
 fn main() {
-    let device = "en0";
-
-    let mut cap: Capture<pcap::Active> = Capture::from_device(device)
-        .unwrap()
-        .immediate_mode(true) // *** this fixes the error
-        .open()
-        .unwrap();
-
-    let dest_ip = IPv4Address::new(192, 168, 1, 1);
+    let dest_ip = IPv4Address::new(8, 8, 8, 8);
     let dest_mac = MACAddress::from_slice([200, 167, 10, 144, 9, 72]); 
     ping(dest_ip, dest_mac, 10);
 }
