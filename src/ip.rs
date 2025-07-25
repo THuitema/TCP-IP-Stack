@@ -168,7 +168,7 @@ impl IPv4Packet {
      * Getter for destination address
      */
     pub fn dest_addr(&self) -> IPv4Address {
-        self.header.src_addr.clone()
+        self.header.dest_addr.clone()
     }
 
     /**
