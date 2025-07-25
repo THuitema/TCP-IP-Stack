@@ -178,6 +178,10 @@ impl IPv4Packet {
         self.payload.clone()
     }
 
+    pub fn set_payload(&mut self, payload: Vec<u8>) {
+        self.payload = payload;
+    }
+
     fn verify_checksum(&self) -> bool {
         let calculated_checksum = self.header.calculate_checksum();
         calculated_checksum == self.header.checksum

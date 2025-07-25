@@ -76,10 +76,17 @@ impl EthernetFrame {
      * Sends frame to dest_addr (MAC address of destination)
      */
     pub fn send_frame(&self, capture: &mut Capture<Active>) -> Result<(), Error> {
-         match self.to_bytes() {
+        match self.to_bytes() {
             Ok(buffer) => capture.sendpacket(buffer),
             Err(e) => Err(e)
-         }
+        }
+    }
+
+    /**
+     * Sends frame already in byte form
+     */
+    pub fn send_frame_bytes(&self, capture: &mut Capture<Active>, bytes: Vec<u8>) -> Result<(), Error> {
+        capture.sendpacket(bytes)
     }
 
     /**
@@ -109,6 +116,10 @@ impl EthernetFrame {
      */
     pub fn payload(&self) -> Vec<u8> {
         self.payload.clone()
+    }
+
+    pub fn set_payload(&mut self, payload: Vec<u8>) {
+        self.payload = payload;
     }
 }
 

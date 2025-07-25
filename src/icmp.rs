@@ -101,6 +101,23 @@ impl ICMPPacket {
 
         result
     }
+
+    pub fn content(&self) -> u32 {
+        self.header.content
+    }
+    
+    pub fn set_content(&mut self, content: u32) {
+        self.header.content = content;
+    }
+
+    pub fn icmp_type(&self) -> u8 {
+        self.header.icmp_type
+    }
+
+    pub fn set_checksum(&mut self) {
+        self.header.checksum = self.calculate_checksum();
+    }
+
 }
 
 impl ICMPHeader {
@@ -145,10 +162,11 @@ impl fmt::Display for ICMPHeader {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "  Type: {},\n  Code: {}, Checksum: {}",
+            "  Type: {},\nCode: {},\nChecksum: {},\nContent: {}",
             self.get_type_name(),
             self.code,
-            self.checksum
+            self.checksum,
+            self.content
         )
     }
 }
