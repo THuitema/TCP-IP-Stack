@@ -23,7 +23,7 @@ fn main() {
 
     let dest_ip = IPv4Address::new(192, 168, 1, 1);
     let dest_mac = MACAddress::from_slice([200, 167, 10, 144, 9, 72]); 
-    ping(&mut cap, dest_ip, dest_mac, 10);
+    ping(dest_ip, dest_mac, 10);
 }
 
 fn capture_loop(capture: &mut Capture<Active>, size: usize) {
