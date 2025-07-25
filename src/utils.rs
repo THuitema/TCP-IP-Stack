@@ -101,6 +101,8 @@ pub fn ping(dest_ip: IPv4Address, dest_mac: MACAddress, size: u16) -> () {
     });
 
     // Send ICMP packets
+    println!("PING {} ({}): {} data bytes", ip_packet.dest_addr(), ip_packet.dest_addr(), icmp_packet.payload_size());
+    
     for seq_num in 0..size {
         // Update the sequence number in the packet bytes and re-compute ICMP checksum
         content = ((identifier as u32) << 16) | (seq_num as u32);

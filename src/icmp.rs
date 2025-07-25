@@ -144,6 +144,13 @@ impl ICMPPacket {
         }
         None
     }
+
+    /**
+     * Returns number of bytes in payload
+     */
+    pub fn payload_size(&self) -> usize {
+        self.payload.len()
+    }
 }
 
 impl ICMPHeader {
