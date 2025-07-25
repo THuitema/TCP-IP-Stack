@@ -1,10 +1,8 @@
-use pcap::{Active, Capture, Device, Error};
-
-use crate::ethernet::{self, EthernetFrame, MACAddress};
-use crate::icmp::{self, process_icmp, ICMPPacket};
+use pcap::{Capture, Device};
+use crate::ethernet::{EthernetFrame, MACAddress};
+use crate::icmp::ICMPPacket;
 use crate::ip::{IPProtocol, IPv4Address, IPv4Packet};
 use crate::parse::{parse, Transport};
-use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
@@ -77,11 +75,16 @@ pub fn ping(dest_ip: IPv4Address, dest_mac: MACAddress, size: u16) -> () {
                             match icmp_packet.icmp_type() {
                                 0 => {
                                     // process echo reply
-                                    let identifier: u16 = (icmp_packet.content() >> 16) as u16;
                                     let seq_num: u16 = (icmp_packet.content() & 0xFF) as u16;
-
-                                    println!("[time] Ping reply from {}: icmp_seq={} identifier={}", packet.ipv4.src_addr(), seq_num, identifier);
                                     
+                                    if let Some(sent_time) = icmp_packet.get_timestamp() {
+                                        let duration = packet.timestamp.signed_duration_since(sent_time);
+                                        println!("{} bytes from {}: icmp_seq={} ttl={} time={}ms", icmp_packet.size(), packet.ipv4.src_addr(), seq_num, packet.ipv4.ttl(), duration.num_milliseconds());
+                                    
+                                    } else {
+                                        println!("{} bytes from {}: icmp_seq={} ttl={}", icmp_packet.size(), packet.ipv4.src_addr(), seq_num, packet.ipv4.ttl());
+                                    }
+             
                                     // Check if we received last ping reply
                                     if (icmp_packet.content() & 0xFF) as u16 == (size - 1) {
                                         break;
@@ -89,11 +92,9 @@ pub fn ping(dest_ip: IPv4Address, dest_mac: MACAddress, size: u16) -> () {
                                 },
                                 _ => ()
                             }
-
-                           
                         }
                     }
-                    Err(e) => ()
+                    Err(_) => ()
                 }
             }
         }
@@ -104,6 +105,7 @@ pub fn ping(dest_ip: IPv4Address, dest_mac: MACAddress, size: u16) -> () {
         // Update the sequence number in the packet bytes and re-compute ICMP checksum
         content = ((identifier as u32) << 16) | (seq_num as u32);
         icmp_packet.set_content(content);
+        icmp_packet.set_timestamp();
         icmp_packet.set_checksum();
 
         match icmp_packet.to_bytes() {

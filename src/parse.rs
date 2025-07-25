@@ -1,11 +1,10 @@
 use pcap::{Error, Packet};
 use crate::{ethernet::EthernetFrame, ip::IPv4Packet, icmp::ICMPPacket};
 use std::fmt;
-use std::time::{SystemTime};
 use chrono::{DateTime, Local};
 
 pub struct ParsedPacket {
-    pub timestamp: SystemTime,
+    pub timestamp: DateTime<Local>,
     pub ethernet: EthernetFrame,
     pub ipv4: IPv4Packet,
     pub transport: Transport,
@@ -36,7 +35,7 @@ impl fmt::Display for ParsedPacket {
 }
 
 pub fn parse(captured_frame: Packet) -> Result<ParsedPacket, Error> {
-    let timestamp = SystemTime::now();
+    let timestamp = Local::now();
 
     let ethernet_frame = EthernetFrame::from_bytes(captured_frame.data)?;
 

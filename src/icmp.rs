@@ -1,7 +1,7 @@
 use pcap::Error;
 use std::fmt;
 use crate::parse::{ParsedPacket, Transport};
-use chrono::{DateTime, Local};
+use chrono::{DateTime, Local, LocalResult, TimeZone};
 
 pub struct ICMPPacket {
     header: ICMPHeader,
@@ -118,6 +118,32 @@ impl ICMPPacket {
         self.header.checksum = self.calculate_checksum();
     }
 
+    pub fn size(&self) -> usize {
+        return 8 + self.payload.len()
+    }
+
+    /**
+     * Sets first 8 bytes of payload to current time in milliseconds
+     */
+    pub fn set_timestamp(&mut self) {
+        let time_millis = Local::now().timestamp_millis();
+        self.payload[..8].copy_from_slice(&time_millis.to_be_bytes());
+    }
+
+    /**
+     * Attempts to extract timestamp in milliseconds from first 8 bytes of payload
+     */
+    pub fn get_timestamp(&self) -> Option<DateTime<Local>> {
+        if self.payload.len() < 8 {
+            return None;
+        }
+
+        let timestamp_bytes = i64::from_be_bytes(self.payload[..8].try_into().unwrap());
+        if let LocalResult::Single(t) = Local.timestamp_millis_opt(timestamp_bytes) {
+            return Some(t);
+        }
+        None
+    }
 }
 
 impl ICMPHeader {
