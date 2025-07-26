@@ -29,6 +29,7 @@ pub struct IPv4Address {
     octets: [u8; 4]
 }
 
+#[derive(Copy, Clone)]
 pub enum IPProtocol {
     ICMP = 1,
     IGMP = 2,
@@ -68,6 +69,9 @@ impl IPv4Packet {
         }
     }
 
+    /**
+     * Converts raw bytes to a IPv4Packet, if the bytes are valid
+     */
     pub fn from_bytes(payload: &Vec<u8>) -> Result<IPv4Packet, Error> {
         // Header is at least 20 bytes
         if payload.len() < 20 {
@@ -151,10 +155,143 @@ impl IPv4Packet {
     }
 
     /**
+     * Getter for Internet Header Length (IHL)
+     * Length of header in 32-bit words
+     * 4 bits
+     */
+    pub fn ihl(&self) -> u8 {
+        self.header.ihl
+    }
+
+    /**
+     * Getter for Differentiated Services Code Point (DSCP)
+     * 6 bits
+     */
+    pub fn dscp(&self) -> u8 {
+        self.header.dscp
+    }
+
+    /**
+     * Setter for Differentiated Services Code Point (DSCP)
+     * 6 bits
+     */
+    pub fn set_dscp(&mut self, dscp: u8) {
+        self.header.dscp = dscp
+    }
+
+    /**
+     * Getter for Explicit Congestion Notification (ECN)
+     * 2 bits
+     */
+    pub fn ecn(&self) -> u8 {
+        self.header.ecn
+    }
+
+    /**
+     * Setter for Explicit Congestion Notification (ECN)
+     * 2 bits
+     */
+    pub fn set_ecn(&mut self, ecn: u8) {
+        self.header.ecn = ecn
+    }
+
+    /**
+     * Getter for packet length
+     * 16 bits
+     */
+    pub fn packet_length(&self) -> u16 {
+        (self.header.ihl as u16) * 4 + (self.payload.len() as u16)
+    }
+
+    /**
+     * Getter for identification
+     * 16 bits
+     */
+    pub fn identification(&self) -> u16 {
+        self.header.identification
+    }
+
+    /**
+     * Setter for identification
+     * 16 bits
+     */
+    pub fn set_identification(&mut self, id: u16) {
+        self.header.identification = id
+    }
+
+    /**
+     * Getter for flags
+     * 3 bits
+     */
+    pub fn flags(&self) -> u8 {
+        self.header.flags
+    }
+
+    /**
+     * Setter for flags
+     * 3 bits
+     */
+    pub fn set_flags(&mut self, flags: u8) {
+        self.header.flags = flags
+    }
+
+    /**
+     * Getter for offset (number of bytes divided by 8)
+     * 13 bits
+     */
+    pub fn offset(&self) -> u16 {
+        self.header.offset
+    }
+
+    /**
+     * Getter for time to live (ttl)
+     * 8 bits
+     */
+    pub fn ttl(&self) -> u8 {
+        self.header.ttl
+    }
+
+    /**
+     * Setter for time to live (ttl)
+     */
+    pub fn set_ttl(&mut self, ttl: u8) {
+        self.header.ttl = ttl
+    }
+
+    /**
+     * Getter for protocol
+     */
+    pub fn protocol(&self) -> IPProtocol {
+        self.header.protocol.clone()
+    }
+
+    /**
      * Returns protocol name
      */
     pub fn protocol_name(&self) -> String {
         self.header.protocol.to_string()
+    }
+
+    /**
+     * Setter for protocol
+     */
+    pub fn set_protocol(&mut self, protocol: IPProtocol) {
+        self.header.protocol = protocol
+    }
+
+    /**
+     * Returns checksum
+     */
+    pub fn checksum(&self) -> u16 {
+        self.header.checksum
+    }
+
+    /**
+     * Internally calculates, sets, and returns checksum
+     */
+    pub fn set_checksum(&mut self) -> u16 {
+        self.header.checksum = self.header.calculate_checksum();
+        self.header.checksum
     }
 
     /**
@@ -165,10 +302,24 @@ impl IPv4Packet {
     }
 
     /**
+     * Setter for source address
+     */
+    pub fn set_src_addr(&mut self, addr: IPv4Address) {
+        self.header.src_addr = addr
+    }
+
+    /**
      * Getter for destination address
      */
     pub fn dest_addr(&self) -> IPv4Address {
         self.header.dest_addr.clone()
+    }
+
+    /**
+     * Setter for destination address
+     */
+    pub fn set_dest_addr(&mut self, addr: IPv4Address) {
+        self.header.dest_addr = addr
     }
 
     /**
@@ -178,12 +329,14 @@ impl IPv4Packet {
         self.payload.clone()
     }
 
+    /**
+     * Setter for payload
+     * Updates packet length field
+     */
     pub fn set_payload(&mut self, payload: Vec<u8>) {
+        let old_payload_length = self.payload.len();
+        self.header.packet_length = self.header.packet_length + ((payload.len() - old_payload_length) as u16);
         self.payload = payload;
-    }
-
-    pub fn ttl(&self) -> u8 {
-        self.header.ttl
     }
 
     fn verify_checksum(&self) -> bool {
@@ -196,7 +349,7 @@ impl IPv4Header {
     /**
      * Returns bytes of IPv4 Header
      */
-    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut buf: Vec<u8> = Vec::new();
 
         // version is first 4 bits, ihl is bottom 4
@@ -234,7 +387,7 @@ impl IPv4Header {
     /**
      * Calculate checksum of header
      */
-    pub fn calculate_checksum(&self) -> u16 {
+    fn calculate_checksum(&self) -> u16 {
         let mut checksum: u32 = 0;
 
         let mut word = u16::from_be_bytes([(self.version & 0x0F) << 4 | (self.ihl & 0x0F), (self.dscp & 0x3F) << 2 | (self.ecn & 0x03)]);
