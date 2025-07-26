@@ -16,6 +16,9 @@ struct ICMPHeader {
 }
 
 impl ICMPPacket {
+    /**
+     * Returns a default ICMPPacket, given the required fields
+     */
     pub fn new(icmp_type: u8, code: u8, content: u32, payload: Vec<u8>) -> Self {
         let header = ICMPHeader {
             icmp_type: icmp_type,
@@ -215,11 +218,6 @@ pub fn process_icmp(packet: &ParsedPacket) -> Result<(), Error> {
     let time_formatted = datetime.format("%H:%M").to_string();
 
 
-    // *** TODO:
-    // rewrite print statements to match log format of parse.rs
-    // write a "ping" function to send ping packets to a (hardcoded for now) address (IP + MAC of other laptop)
-    // process: send echo request packet -> start timer & wait -> receive echo reply with correct identifier & seq_num -> print log with timestamp -> send next, or stop after max seq_num
-    // research if this process is correct (does ping wait to receive reply before sending next request? maybe there is a timeout?)
     match icmp_packet.header.icmp_type {
         0 => {
             // echo reply (you sent the ping)

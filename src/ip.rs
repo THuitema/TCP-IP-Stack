@@ -146,6 +146,7 @@ impl IPv4Packet {
 
     /**
      * Returns bytes of IPv4 Packet
+     * Assumes checksum has already been calculated with self.set_checksum()
      */
     pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut buf = self.header.to_bytes().unwrap();
