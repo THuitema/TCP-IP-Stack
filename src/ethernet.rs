@@ -88,7 +88,8 @@ impl EthernetFrame {
     }
 
     /**
-     * Sends EthernetFrame already in byte form
+     * Sends EthernetFrame already in byte form to dest_addr
+     * Useful if sending multiple EthernetFrames and only changing a few bytes between each one, to avoid calling to_bytes() every time
      */
     pub fn send_frame_bytes(&self, capture: &mut Capture<Active>, bytes: Vec<u8>) -> Result<(), Error> {
         capture.sendpacket(bytes)
