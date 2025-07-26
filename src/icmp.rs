@@ -1,6 +1,6 @@
 use pcap::Error;
 use std::fmt;
-use crate::parse::{ParsedPacket, Transport};
+use crate::{icmp, parse::{ParsedPacket, Transport}};
 use chrono::{DateTime, Local, LocalResult, TimeZone};
 
 pub struct ICMPPacket {
@@ -65,6 +65,7 @@ impl ICMPPacket {
 
     /**
      * Returns bytes of ICMP Packet
+     * Assumes checksum has already been calculated with self.set_checksum() 
      */
     pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut buf: Vec<u8> = self.header.to_bytes().unwrap();
@@ -72,10 +73,53 @@ impl ICMPPacket {
         Ok(buf)
     }
 
-    /**
-     * Assumes checksum field is set to zero prior to calling this function
+    /** 
+     * Getter for ICMP type
      */
-    pub fn calculate_checksum(&self) -> u16 {
+    pub fn icmp_type(&self) -> u8 {
+        self.header.icmp_type
+    }
+
+    /** 
+     * Setter for ICMP type
+     */
+    pub fn set_icmp_type(&mut self, icmp_type: u8) {
+        self.header.icmp_type = icmp_type
+    }
+
+    /** 
+     * Getter for code
+     */
+    pub fn code(&self) -> u8 {
+        self.header.code
+    }
+
+    /** 
+     * Setter for code
+     */
+    pub fn set_code(&mut self, code: u8) {
+        self.header.code = code
+    }
+
+    /**
+     * Getter for checksum
+     */
+    pub fn checksum(&self) -> u16 {
+        self.header.checksum
+    }
+
+    /**
+     * Internally calculates, sets, and returns checksum
+     */
+    pub fn set_checksum(&mut self) -> u16 {
+        self.header.checksum = self.calculate_checksum();
+        self.header.checksum
+    }
+
+    /**
+     * Returns the checksum of the ICMP packet
+     */
+    fn calculate_checksum(&self) -> u16 {
         let mut checksum: u32 = 0;
 
         let mut word = u16::from_be_bytes([self.header.icmp_type, self.header.code]);
@@ -113,16 +157,25 @@ impl ICMPPacket {
         self.header.content = content;
     }
 
-    pub fn icmp_type(&self) -> u8 {
-        self.header.icmp_type
+    /**
+     * Getter for payload
+     */
+    pub fn payload(&self) -> Vec<u8> {
+        self.payload.clone()
     }
 
-    pub fn set_checksum(&mut self) {
-        self.header.checksum = self.calculate_checksum();
+    /**
+     * Returns number of bytes in payload
+     */
+    pub fn payload_size(&self) -> usize {
+        self.payload.len()
     }
 
-    pub fn size(&self) -> usize {
-        return 8 + self.payload.len()
+    /**
+     * Setter for payload
+     */
+    pub fn set_payload(&mut self, payload: Vec<u8>) {
+        self.payload = payload
     }
 
     /**
@@ -149,10 +202,10 @@ impl ICMPPacket {
     }
 
     /**
-     * Returns number of bytes in payload
+     * Returns number of bytes in packet
      */
-    pub fn payload_size(&self) -> usize {
-        self.payload.len()
+    pub fn size(&self) -> usize {
+        return 8 + self.payload.len()
     }
 }
 
