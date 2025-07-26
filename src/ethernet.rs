@@ -19,6 +19,9 @@ pub struct MACAddress {
 }
 
 impl EthernetFrame {
+    /**
+     * Returns a new EthernetFrame
+     */
     pub fn new(src_addr: MACAddress, dest_addr: MACAddress, ethertype: u16, payload: Vec<u8>) -> Self {
         let header = EthernetHeader {
             dest_addr: dest_addr,
@@ -31,6 +34,7 @@ impl EthernetFrame {
             payload: payload
         }
     }
+
     /**
      * Converts raw bytes to an EthernetFrame, if the bytes are valid
      */
@@ -58,6 +62,7 @@ impl EthernetFrame {
 
     /**
      * Returns bytes of EthernetFrame
+     * Error returned if payload exceeds 1500 bytes
      */
     pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut buf: Vec<u8> = self.header.to_bytes().unwrap();
@@ -73,7 +78,7 @@ impl EthernetFrame {
     }
 
     /**
-     * Sends frame to dest_addr (MAC address of destination)
+     * Sends EthernetFrame to dest_addr (MAC address of destination)
      */
     pub fn send_frame(&self, capture: &mut Capture<Active>) -> Result<(), Error> {
         match self.to_bytes() {
@@ -83,10 +88,52 @@ impl EthernetFrame {
     }
 
     /**
-     * Sends frame already in byte form
+     * Sends EthernetFrame already in byte form
      */
     pub fn send_frame_bytes(&self, capture: &mut Capture<Active>, bytes: Vec<u8>) -> Result<(), Error> {
         capture.sendpacket(bytes)
+    }
+
+    /**
+     * Getter for destination MAC address
+     */
+    pub fn dest_addr(&self) -> MACAddress {
+        self.header.dest_addr.clone()
+    }
+
+    /**
+     * Setter for destination MAC address
+     */
+    pub fn set_dest_addr(&mut self, addr: MACAddress) {
+        self.header.dest_addr = addr
+    }
+
+    /**
+     * Getter for source MAC address
+     */
+    pub fn src_addr(&self) -> MACAddress {
+        self.header.src_addr.clone()
+    }
+
+    /**
+     * Setter for source MAC address
+     */
+    pub fn set_src_addr(&mut self, addr: MACAddress) {
+        self.header.src_addr = addr
+    }
+
+    /**
+     * Getter for ethertype
+     */
+    pub fn ethertype(&self) -> u16 {
+        self.header.ethertype
+    }
+
+    /**
+     * Setter for ethertype
+     */
+    pub fn set_ethertype(&mut self, ethertype: u16) {
+        self.header.ethertype = ethertype
     }
 
     /**
@@ -98,26 +145,15 @@ impl EthernetFrame {
     }
 
     /**
-     * Getter for destination MAC address
-     */
-    pub fn dest_addr(&self) -> MACAddress {
-        self.header.dest_addr.clone()
-    }
-
-    /**
-     * Getter for source MAC address
-     */
-    pub fn src_addr(&self) -> MACAddress {
-        self.header.src_addr.clone()
-    }
-
-    /**
      * Getter for payload
      */
     pub fn payload(&self) -> Vec<u8> {
         self.payload.clone()
     }
 
+    /**
+     * Setter for payload
+     */
     pub fn set_payload(&mut self, payload: Vec<u8>) {
         self.payload = payload;
     }
@@ -143,7 +179,7 @@ impl EthernetHeader {
     /**
      * Returns bytes of EthernetHeader
      */
-    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut buf: Vec<u8> = Vec::new();
         buf.extend_from_slice(&self.dest_addr.octets);
         buf.extend_from_slice(&self.src_addr.octets);
