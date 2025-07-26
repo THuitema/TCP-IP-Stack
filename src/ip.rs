@@ -323,6 +323,13 @@ impl IPv4Packet {
     }
 
     /**
+     * Getter for options
+     */
+    pub fn options(&self) -> Option<Vec<u8>> {
+        self.header.options.clone()
+    }
+
+    /**
      * Getter for payload
      */
     pub fn payload(&self) -> Vec<u8> {
