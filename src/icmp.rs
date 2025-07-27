@@ -262,32 +262,44 @@ impl fmt::Display for ICMPHeader {
     }
 }
 
-pub fn process_icmp(packet: &ParsedPacket) -> Result<(), Error> {
-    // check type for echo reply & request --> parse content & payload
+pub fn process_icmp(packet: &ParsedPacket, addr_info: &mut AddrInfo) -> Result<(), Error> {
     let icmp_packet = match &packet.transport {
         Transport::ICMP(pack) => pack,
         _ => return Err(Error::PcapError("(process_icmp) invalid ParsedPacket provided. Transport protocol is not ICMP".to_string()))
     };
-    // let Transport::ICMP(icmp_packet) = &packet.transport;
+
     let datetime: DateTime<Local> = packet.timestamp.into();
     let time_formatted = datetime.format("%H:%M").to_string();
 
-
+    // Only expecting to receive echo requests when running our network stack
+    // Echo replies should only be received when running ping(), which handles those internally
     match icmp_packet.header.icmp_type {
-        0 => {
-            // echo reply (you sent the ping)
-            let identifier: u16 = (icmp_packet.header.content >> 16) as u16;
-            let seq_num: u16 = (icmp_packet.header.content & 0xFF) as u16;
-
-            println!("[{}] Ping reply from {}: icmp_seq={} identifier={}", time_formatted, packet.ipv4.src_addr(), seq_num, identifier);
-            Ok(())
-        },
         8 => {
             // echo request (they sent the ping)
             let identifier: u16 = (icmp_packet.header.content >> 16) as u16;
             let seq_num: u16 = (icmp_packet.header.content & 0xFF) as u16;
-            println!("[{}] Ping request from {}: icmp_seq={} identifier={}", time_formatted, packet.ipv4.src_addr(), seq_num, identifier);
-            Ok(())
+            println!("[{}] Ping request from {}: icmp_seq={} identifier={} ttl={}", time_formatted, packet.ipv4.src_addr(), seq_num, identifier, packet.ipv4.ttl());
+
+            // Send echo reply packet back
+            let mut reply_icmp = icmp_packet.clone();
+            let mut reply_ip = packet.ipv4.clone();
+            let mut reply_ethernet = packet.ethernet.clone();
+
+            reply_icmp.set_icmp_type(0);
+            reply_icmp.set_checksum();
+
+            let tmp = reply_ip.src_addr();
+            reply_ip.set_src_addr(reply_ip.dest_addr());
+            reply_ip.set_dest_addr(tmp);
+            reply_ip.set_payload(reply_icmp.to_bytes().unwrap());
+            reply_ip.set_checksum();
+
+            reply_ethernet.set_src_addr(reply_ethernet.dest_addr());
+            reply_ethernet.set_dest_addr(addr_info.router_mac);
+            reply_ethernet.set_payload(reply_ip.to_bytes().unwrap());
+            
+            println!("SENDING REPLY");
+            reply_ethernet.send_frame(&mut addr_info.capture)
         },
         n => {
             println!("[{}] ICMP packet received from {}: type={} code={}", time_formatted, packet.ipv4.src_addr(), n, icmp_packet.header.code);

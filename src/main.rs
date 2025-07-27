@@ -27,8 +27,8 @@ fn main() {
 
 
     println!("MAC: {}, IP: {}", addr_info.addr_mac, addr_info.addr_ipv4);
-    ping(IPv4Address::new(192, 168, 1, 67), &mut addr_info, 5);
-    // capture_loop(&mut addr_info, 100);
+    // ping(IPv4Address::new(192, 168, 1, 67), &mut addr_info, 5);
+    capture_loop(&mut addr_info, 100);
 }
 
 fn capture_loop(addr_info: &mut AddrInfo, size: usize) {
@@ -41,7 +41,7 @@ fn capture_loop(addr_info: &mut AddrInfo, size: usize) {
         match parse(captured_frame) {
             Ok(packet) => {
                 
-                match process_icmp(&packet, &addr_info) {
+                match process_icmp(&packet, addr_info) {
                     Ok(_) => (),
                     Err(e) => eprintln!("{}", e)
                 }
