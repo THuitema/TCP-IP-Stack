@@ -14,7 +14,10 @@ use icmp::process_icmp;
 use addr_info::{AddrInfo, setup_addr_info};
 
 fn main() {
-    let mut addr_info: AddrInfo = match setup_addr_info(Some("en0")) {
+    // Need to hardcode MAC address of router until we implement ARP
+    let router_mac = MACAddress::new(0xc8, 0xa7, 0xa, 0x90, 0x9, 0x48);
+
+    let mut addr_info: AddrInfo = match setup_addr_info(Some("en0"), router_mac) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("{}", e);
@@ -22,9 +25,10 @@ fn main() {
         }
     };
 
-    println!("MAC: {}, IP: {}", addr_info.addr_mac, addr_info.addr_ipv4);
 
-    capture_loop(&mut addr_info, 100);
+    println!("MAC: {}, IP: {}", addr_info.addr_mac, addr_info.addr_ipv4);
+    ping(IPv4Address::new(192, 168, 1, 67), &mut addr_info, 5);
+    // capture_loop(&mut addr_info, 100);
 }
 
 fn capture_loop(addr_info: &mut AddrInfo, size: usize) {
@@ -36,15 +40,13 @@ fn capture_loop(addr_info: &mut AddrInfo, size: usize) {
 
         match parse(captured_frame) {
             Ok(packet) => {
-                // print some log
-                println!("{}", packet);
                 
-                match process_icmp(&packet) {
+                match process_icmp(&packet, &addr_info) {
                     Ok(_) => (),
                     Err(e) => eprintln!("{}", e)
                 }
             },
-            Err(e) => eprintln!("{}", e)
+            Err(e) => () //eprintln!("{}", e)
         } 
 
         if count > size {

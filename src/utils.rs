@@ -1,5 +1,6 @@
-use pcap::{Capture, Device};
-use crate::ethernet::{EthernetFrame, MACAddress};
+use pcap::{Device};
+use crate::addr_info::{AddrInfo, setup_capture};
+use crate::ethernet::{EthernetFrame};
 use crate::icmp::ICMPPacket;
 use crate::ip::{IPProtocol, IPv4Address, IPv4Packet};
 use crate::parse::{parse, Transport};
@@ -9,7 +10,7 @@ use std::time::Duration;
 /**
  * Pings dest_ip a certain number of times, specified by size
  */
-pub fn ping(dest_ip: IPv4Address, dest_mac: MACAddress, size: u16) -> () {
+pub fn ping(dest_ip: IPv4Address, addr_info: &mut AddrInfo, size: u16) -> () {
     // ICMP Packet
     let identifier: u16 = 12345; // probably needs to be some random number
     let mut content = (identifier as u32) << 16;
@@ -17,7 +18,6 @@ pub fn ping(dest_ip: IPv4Address, dest_mac: MACAddress, size: u16) -> () {
     let mut icmp_packet = ICMPPacket::new(8, 0, content, icmp_payload);
 
     // IPv4 Packet
-    let src_ip = IPv4Address::new(192, 168, 1, 41); // TODO: resolve the current computer's IP address instead of hardcoding
     let protocol = match IPProtocol::from_str("ICMP") {
         Ok(p) => p,
         Err(e) => {
@@ -34,10 +34,9 @@ pub fn ping(dest_ip: IPv4Address, dest_mac: MACAddress, size: u16) -> () {
         }
     };
 
-    let ip_packet = IPv4Packet::new(src_ip, dest_ip, protocol, ip_payload);
+    let ip_packet = IPv4Packet::new(addr_info.addr_ipv4, dest_ip, protocol, ip_payload);
 
     // Ethernet Frame
-    let src_mac = MACAddress::from_slice([108, 126, 103, 204, 17, 197]);
     let ethertype: u16 = 0x0800;
     let ethernet_payload: Vec<u8> = match ip_packet.to_bytes() {
         Ok(p) => p,
@@ -47,7 +46,7 @@ pub fn ping(dest_ip: IPv4Address, dest_mac: MACAddress, size: u16) -> () {
         }
     };
 
-    let ethernet_frame = EthernetFrame::new(src_mac, dest_mac, ethertype, ethernet_payload);
+    let ethernet_frame = EthernetFrame::new(addr_info.addr_mac, addr_info.router_mac, ethertype, ethernet_payload);
     let mut ethernet_bytes = match ethernet_frame.to_bytes() {
         Ok(p) => p,
         Err(e) => {
@@ -56,16 +55,7 @@ pub fn ping(dest_ip: IPv4Address, dest_mac: MACAddress, size: u16) -> () {
         }
     };
 
-    let recv_cap: Capture<pcap::Active> = Capture::from_device("en0")
-        .unwrap()
-        .immediate_mode(true)
-        .open()
-        .unwrap();
-    let mut send_cap: Capture<pcap::Active> = Capture::from_device("en0")
-        .unwrap()
-        .immediate_mode(true) 
-        .open()
-        .unwrap();
+    let recv_cap = setup_capture(&addr_info.interface);
 
     thread::spawn(move || {
         let mut cap = recv_cap;
@@ -121,7 +111,7 @@ pub fn ping(dest_ip: IPv4Address, dest_mac: MACAddress, size: u16) -> () {
             }
         };
 
-        match send_cap.sendpacket(ethernet_bytes.clone()) {
+        match addr_info.capture.sendpacket(ethernet_bytes.clone()) {
             Ok(_) => (),
             Err(e) => {
                 eprintln!("{e}");
