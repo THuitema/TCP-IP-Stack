@@ -1,13 +1,15 @@
 use pcap::Error;
 use std::fmt;
-use crate::{icmp, parse::{ParsedPacket, Transport}};
+use crate::{addr_info::AddrInfo, parse::{ParsedPacket, Transport}};
 use chrono::{DateTime, Local, LocalResult, TimeZone};
 
+#[derive(Clone)]
 pub struct ICMPPacket {
     header: ICMPHeader,
     payload: Vec<u8>
 }
 
+#[derive(Clone)]
 struct ICMPHeader {
     icmp_type: u8,
     code: u8,

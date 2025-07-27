@@ -2,11 +2,13 @@ use pcap::{Active, Capture, Error};
 use std::convert::TryInto;
 use std::fmt;
 
+#[derive(Clone)]
 pub struct EthernetFrame {
     header: EthernetHeader,
     payload: Vec<u8>,
 }
 
+#[derive(Clone)]
 struct EthernetHeader {
     dest_addr: MACAddress, // destination MAC address (6 bytes)
     src_addr: MACAddress,  // source MAC address (6 bytes)

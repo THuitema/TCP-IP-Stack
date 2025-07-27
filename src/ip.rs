@@ -1,12 +1,13 @@
 use pcap::Error;
 use std::fmt;
 
-
+#[derive(Clone)]
 pub struct IPv4Packet {
     header: IPv4Header,
     payload: Vec<u8>,
 }
 
+#[derive(Clone)]
 struct IPv4Header {
     version: u8,              // IP version (4 bits)
     ihl: u8,                  // length of header in 32-bit words (4 bits)
