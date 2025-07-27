@@ -7,3 +7,5 @@ edition = "2021"
 pcap = "2.2.0"
 
 chrono = "0.4"
+
+pnet = "0.34.0"

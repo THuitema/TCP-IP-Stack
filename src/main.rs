@@ -4,25 +4,34 @@ mod ip;
 mod icmp;
 mod parse;
 mod utils;
+mod addr_info;
 
 use ethernet::MACAddress;
 use ip::IPv4Address;
 use parse::parse;
-use pcap::{Active, Capture};
 use utils::ping;
 use icmp::process_icmp;
+use addr_info::{AddrInfo, setup_addr_info};
 
 fn main() {
-    let dest_ip = IPv4Address::new(8, 8, 8, 8);
-    let dest_mac = MACAddress::from_slice([200, 167, 10, 144, 9, 72]); 
-    ping(dest_ip, dest_mac, 10);
+    let mut addr_info: AddrInfo = match setup_addr_info(Some("en0")) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("{}", e);
+            return;
+        }
+    };
+
+    println!("MAC: {}, IP: {}", addr_info.addr_mac, addr_info.addr_ipv4);
+
+    capture_loop(&mut addr_info, 100);
 }
 
-fn capture_loop(capture: &mut Capture<Active>, size: usize) {
+fn capture_loop(addr_info: &mut AddrInfo, size: usize) {
     let mut count = 0;
 
     // TODO: implement some sort of multithreading to parse each packet asynchronously
-    while let Ok(captured_frame) = capture.next_packet() {
+    while let Ok(captured_frame) = addr_info.capture.next_packet() {
         count += 1;
 
         match parse(captured_frame) {
