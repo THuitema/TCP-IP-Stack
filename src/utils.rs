@@ -6,6 +6,9 @@ use crate::parse::{parse, Transport};
 use std::thread;
 use std::time::Duration;
 
+/**
+ * Pings dest_ip a certain number of times, specified by size
+ */
 pub fn ping(dest_ip: IPv4Address, dest_mac: MACAddress, size: u16) -> () {
     // ICMP Packet
     let identifier: u16 = 12345; // probably needs to be some random number
@@ -131,7 +134,11 @@ pub fn ping(dest_ip: IPv4Address, dest_mac: MACAddress, size: u16) -> () {
     }
 }
 
-fn get_devices() {
+/**
+ * Prints the devices/interfaces found on the computer
+ * Outputs information including name, IP address, and netmask
+ */
+pub fn get_devices() {
     let devices = Device::list().unwrap();
     println!("{} devices found!", devices.len());
 
@@ -147,3 +154,4 @@ fn get_devices() {
         }
     }
 }
+

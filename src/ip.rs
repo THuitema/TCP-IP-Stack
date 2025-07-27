@@ -460,6 +460,10 @@ impl IPv4Address {
     pub fn from_u32(ip: u32) -> Self {
         Self { octets: ip.to_be_bytes() }
     }
+
+    pub fn from_slice(slice: [u8; 4]) -> Self {
+        Self {octets: slice}
+    }
 }
 
 impl IPProtocol {
