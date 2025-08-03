@@ -5,6 +5,7 @@ mod icmp;
 mod parse;
 mod utils;
 mod addr_info;
+mod udp;
 
 use ethernet::MACAddress;
 use ip::IPv4Address;
