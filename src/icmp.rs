@@ -141,6 +141,11 @@ impl ICMPPacket {
             checksum = checksum.wrapping_add(word as u32) // add one's complement of word
         }   
 
+        // Check if we need to add last byte
+        if self.payload.len() % 2 == 1 {
+            checksum = checksum.wrapping_add(*self.payload.last().unwrap() as u32);
+        }
+
         // add back the overflow bits
         while (checksum >> 16) != 0 {
             checksum = (checksum & 0xFFFF) + (checksum >> 16);
