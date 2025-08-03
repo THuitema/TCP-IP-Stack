@@ -458,6 +458,10 @@ impl IPv4Address {
         u32::from_be_bytes(self.octets)
     }
 
+    pub fn octects(&self) -> [u8; 4] {
+        self.octets
+    }
+
     pub fn from_u32(ip: u32) -> Self {
         Self { octets: ip.to_be_bytes() }
     }
