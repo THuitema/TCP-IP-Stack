@@ -17,6 +17,26 @@ struct UDPHeader {
 
 impl UDPDatagram {
     /**
+     * Returns a new UDPDatagram by specifying the required fields
+     */
+    pub fn new(src_port: u16, dest_port: u16, src_addr: IPv4Address, dest_addr: IPv4Address, data: Vec<u8>) -> Self {
+        let header = UDPHeader {
+            src_port: src_port,
+            dest_port: dest_port,
+            length: 8 + data.len() as u16,
+            checksum: 0
+        };
+
+        let mut packet = Self {
+            header: header,
+            data: data
+        };
+
+        packet.set_checksum(17, src_addr, dest_addr);
+        packet
+    }
+
+    /**
      * Converts raw bytes to a UDPPacket, if the bytes are valid
      */
     pub fn from_bytes(data: &Vec<u8>) -> Result<UDPDatagram, Error> {
@@ -37,6 +57,16 @@ impl UDPDatagram {
         };
 
         Ok(packet)
+    }
+
+    /**
+     * Returns bytes of UDP Datagram
+     * Assumes checksum has already been calculated with self.set_checksum() 
+     */
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        let mut buf: Vec<u8> = self.header.to_bytes()?;
+        buf.extend(&self.data);
+        Ok(buf)
     }
 
     /** 
@@ -165,5 +195,15 @@ impl UDPDatagram {
 }
 
 impl UDPHeader {
-
+    /**
+     * Returns bytes of UDP datagram header
+     */
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        let mut buf: Vec<u8> = Vec::new();
+        buf.extend_from_slice(&u16::to_be_bytes(self.src_port));
+        buf.extend_from_slice(&u16::to_be_bytes(self.dest_port));
+        buf.extend_from_slice(&u16::to_be_bytes(self.length));
+        buf.extend_from_slice(&u16::to_be_bytes(self.checksum));
+        Ok(buf)
+    }
 }
