@@ -207,3 +207,27 @@ impl UDPHeader {
         Ok(buf)
     }
 }
+
+impl fmt::Display for UDPDatagram {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "UDP Datagram, {{\n{} \n  Data: {} bytes \n}}",
+            self.header,
+            self.data.len()
+        )
+    }
+}
+
+impl fmt::Display for UDPHeader {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "  Source port: {},\nDestination port: {},\nLength: {},\nChecksum: {}",
+            self.src_port,
+            self.dest_port,
+            self.length,
+            self.checksum
+        )
+    }
+}
