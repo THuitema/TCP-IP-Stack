@@ -111,7 +111,7 @@ pub fn ping(dest_ip: IPv4Address, addr_info: &mut AddrInfo, size: u16) -> () {
             }
         };
 
-        match addr_info.capture.sendpacket(ethernet_bytes.clone()) {
+        match addr_info.capture.sendpacket(&ethernet_bytes[..]) {
             Ok(_) => (),
             Err(e) => {
                 eprintln!("{e}");

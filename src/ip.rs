@@ -73,7 +73,7 @@ impl IPv4Packet {
     /**
      * Converts raw bytes to a IPv4Packet, if the bytes are valid
      */
-    pub fn from_bytes(payload: &Vec<u8>) -> Result<IPv4Packet, Error> {
+    pub fn from_bytes(payload: Vec<u8>) -> Result<IPv4Packet, Error> {
         // Header is at least 20 bytes
         if payload.len() < 20 {
             return Err(Error::PcapError(format!("IPv4 packet has insufficient length ({} bytes)", payload.len())))
@@ -263,8 +263,8 @@ impl IPv4Packet {
     /**
      * Getter for protocol
      */
-    pub fn protocol(&self) -> IPProtocol {
-        self.header.protocol.clone()
+    pub fn protocol(&self) -> &IPProtocol {
+        &self.header.protocol
     }
 
     /**
@@ -299,8 +299,8 @@ impl IPv4Packet {
     /**
      * Getter for source address
      */
-    pub fn src_addr(&self) -> IPv4Address {
-        self.header.src_addr.clone()
+    pub fn src_addr(&self) -> &IPv4Address {
+        &self.header.src_addr
     }
 
     /**
@@ -313,8 +313,8 @@ impl IPv4Packet {
     /**
      * Getter for destination address
      */
-    pub fn dest_addr(&self) -> IPv4Address {
-        self.header.dest_addr.clone()
+    pub fn dest_addr(&self) -> &IPv4Address {
+        &self.header.dest_addr
     }
 
     /**
@@ -327,15 +327,18 @@ impl IPv4Packet {
     /**
      * Getter for options
      */
-    pub fn options(&self) -> Option<Vec<u8>> {
-        self.header.options.clone()
+    pub fn options(&self) -> Option<&[u8]> {
+        if let Some(o) = &self.header.options {
+            return Some(&o)
+        }
+        None
     }
 
     /**
      * Getter for payload
      */
-    pub fn payload(&self) -> Vec<u8> {
-        self.payload.clone()
+    pub fn payload(&self) -> &[u8] {
+        &self.payload
     }
 
     /**
@@ -537,7 +540,7 @@ impl fmt::Display for IPv4Packet {
 
 impl fmt::Display for IPv4Header {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let options = match self.options.clone() {
+        let options = match &self.options {
             Some(o) => format!("{} bytes", o.len()),
             None => "None".to_string()
         };
@@ -612,7 +615,7 @@ mod tests {
         println!("BEFORE\n{}", packet);
 
         let packet_bytes = packet.to_bytes().unwrap();
-        let packet2 = IPv4Packet::from_bytes(&packet_bytes).unwrap();
+        let packet2 = IPv4Packet::from_bytes(packet_bytes).unwrap();
 
         println!("AFTER\n{}", packet2);
     }

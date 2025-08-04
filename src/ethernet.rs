@@ -100,8 +100,8 @@ impl EthernetFrame {
     /**
      * Getter for destination MAC address
      */
-    pub fn dest_addr(&self) -> MACAddress {
-        self.header.dest_addr.clone()
+    pub fn dest_addr(&self) -> &MACAddress {
+        &self.header.dest_addr
     }
 
     /**
@@ -114,8 +114,8 @@ impl EthernetFrame {
     /**
      * Getter for source MAC address
      */
-    pub fn src_addr(&self) -> MACAddress {
-        self.header.src_addr.clone()
+    pub fn src_addr(&self) -> &MACAddress {
+        &self.header.src_addr
     }
 
     /**
@@ -150,8 +150,8 @@ impl EthernetFrame {
     /**
      * Getter for payload
      */
-    pub fn payload(&self) -> Vec<u8> {
-        self.payload.clone()
+    pub fn payload(&self) -> &[u8] {
+        &self.payload
     }
 
     /**

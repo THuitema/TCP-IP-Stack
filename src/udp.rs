@@ -150,8 +150,8 @@ impl UDPDatagram {
     /** 
      * Getter for datagram data
      */
-    pub fn data(&self) -> Vec<u8> {
-        self.data.clone()
+    pub fn data(&self) -> &[u8] {
+        &self.data
     }
 
     /** 

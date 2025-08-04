@@ -42,7 +42,7 @@ fn capture_loop(addr_info: &mut AddrInfo, size: usize) {
         match parse(captured_frame) {
             Ok(packet) => {
                 
-                match process_icmp(&packet, addr_info) {
+                match process_icmp(packet, addr_info) {
                     Ok(_) => (),
                     Err(e) => eprintln!("{}", e)
                 }

@@ -44,7 +44,7 @@ pub fn parse(captured_frame: Packet) -> Result<ParsedPacket, Error> {
     let network_protocol = ethernet_frame.ethertype_to_protocol_name();
 
     if network_protocol == "IPv4" {
-        ip_packet = IPv4Packet::from_bytes(&ethernet_frame.payload())?;
+        ip_packet = IPv4Packet::from_bytes(ethernet_frame.payload().to_vec())?;
     } 
     else {
         return Err(Error::PcapError(format!("(parse) network layer \"{}\" packets not yet supported", network_protocol)))
