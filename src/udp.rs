@@ -39,7 +39,7 @@ impl UDPDatagram {
     /**
      * Converts raw bytes to a UDPPacket, if the bytes are valid
      */
-    pub fn from_bytes(data: &Vec<u8>) -> Result<UDPDatagram, Error> {
+    pub fn from_bytes(data: &[u8]) -> Result<UDPDatagram, Error> {
         if data.len() < 8 {
             return Err(Error::PcapError(format!("UDP packet has insufficient length ({} bytes)", data.len())));
         }

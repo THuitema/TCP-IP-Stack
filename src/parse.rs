@@ -1,5 +1,5 @@
 use pcap::{Error, Packet};
-use crate::{ethernet::EthernetFrame, ip::IPv4Packet, icmp::ICMPPacket};
+use crate::{ethernet::EthernetFrame, icmp::ICMPPacket, ip::IPv4Packet, udp::UDPDatagram};
 use std::fmt;
 use chrono::{DateTime, Local};
 
@@ -12,7 +12,7 @@ pub struct ParsedPacket {
 
 pub enum Transport {
     ICMP(ICMPPacket),
-    UDP,
+    UDP(UDPDatagram),
     TCP
 }
 
@@ -52,11 +52,11 @@ pub fn parse(captured_frame: Packet) -> Result<ParsedPacket, Error> {
 
     let transport_protocol = ip_packet.protocol_name();
 
-    if transport_protocol == "ICMP" {
-        transport_packet = Transport::ICMP(ICMPPacket::from_bytes(&ip_packet.payload())?);
-    } else {
-        return Err(Error::PcapError(format!("(parse) transport layer \"{}\" packets not supported", transport_protocol)))
-    }
+    transport_packet = match transport_protocol.as_str() {
+        "ICMP" => Transport::ICMP(ICMPPacket::from_bytes(ip_packet.payload())?),
+        "UDP" => Transport::UDP(UDPDatagram::from_bytes(ip_packet.payload())?),
+        s => return Err(Error::PcapError(format!("(parse) transport layer \"{}\" packets not supported", s)))
+    };
 
     Ok(ParsedPacket {
         timestamp: timestamp,
