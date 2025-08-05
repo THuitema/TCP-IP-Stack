@@ -9,10 +9,11 @@ mod udp;
 
 use ethernet::MACAddress;
 use ip::IPv4Address;
-use parse::parse;
+use parse::{parse, Transport};
 use utils::ping;
 use icmp::process_icmp;
 use addr_info::{AddrInfo, setup_addr_info};
+use udp::process_udp;
 
 fn main() {
     // Need to hardcode MAC address of router until we implement ARP
@@ -41,13 +42,23 @@ fn capture_loop(addr_info: &mut AddrInfo, size: usize) {
 
         match parse(captured_frame) {
             Ok(packet) => {
-                
-                match process_icmp(packet, addr_info) {
-                    Ok(_) => (),
-                    Err(e) => eprintln!("{}", e)
-                }
+                match &packet.transport {
+                    Transport::ICMP(_) => {
+                        match process_icmp(packet, addr_info) {
+                            Ok(_) => (),
+                            Err(e) => eprintln!("{}", e)
+                        }
+                    },
+                    Transport::UDP(_) => {
+                        match process_udp(packet) {
+                            Ok(_) => (),
+                            Err(e) => eprintln!("{}", e)
+                        }
+                    },
+                    _ => ()
+                }                
             },
-            Err(e) => () //eprintln!("{}", e)
+            Err(_) => ()
         } 
 
         if count > size {

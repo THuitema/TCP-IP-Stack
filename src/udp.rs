@@ -1,7 +1,7 @@
 use pcap::Error;
 use std::fmt;
-
-use crate::ip::IPv4Address;
+use crate::{ip::IPv4Address, parse::{ParsedPacket, Transport}};
+use chrono::{DateTime, Local};
 
 pub struct UDPDatagram {
     header: UDPHeader,
@@ -229,5 +229,31 @@ impl fmt::Display for UDPHeader {
             self.length,
             self.checksum
         )
+    }
+}
+
+pub fn process_udp(packet: ParsedPacket) -> Result<(), Error> {
+    let udp_datagram = match packet.transport {
+        Transport::UDP(pack) => pack,
+        _ => return Err(Error::PcapError("(process_udp) invalid ParsedPacked provided. Transport protocol is not UDP".to_string()))
+    };
+
+    let datetime: DateTime<Local> = packet.timestamp.into();
+    let time_formatted = datetime.format("%H:%M").to_string();
+
+    println!("[{}] UDP datagram from {}:{} to {}:{} ({} bytes)", time_formatted, packet.ipv4.src_addr(), udp_datagram.src_port(), packet.ipv4.dest_addr(), udp_datagram.dest_port(), udp_datagram.length());
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /**
+     * Verify converting packet to bytes and back does not change it
+     */
+    #[test]
+    fn test_udp_packet() {
+        /* TODO */
     }
 }
