@@ -1,3 +1,17 @@
 # TCP/IP Stack in Rust
 
-work in progress!
+Building a custom network from the ground-up as I teach myself computer networks!
+
+Progress:
+- [x] Ethernet
+- [x] IPv4
+- [x] ICMP
+- [x] MILESTONE: write ping() to test reachability of the stack 
+- [ ] UDP (in progress)
+- [ ] TCP   
+
+Ping implementation:
+
+https://github.com/user-attachments/assets/58539268-34f7-4e98-a9fc-8af3aca8d3f0
+
+
