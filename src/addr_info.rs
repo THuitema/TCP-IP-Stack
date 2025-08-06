@@ -10,6 +10,7 @@ use pnet::datalink;
 pub struct AddrInfo {
     pub addr_mac: MACAddress,
     pub addr_ipv4: IPv4Address,
+    pub port: u16,
     pub capture: Capture<pcap::Active>,
     pub interface: String,
     pub router_mac: MACAddress
@@ -19,7 +20,7 @@ pub struct AddrInfo {
  * Returns AddrInfo with device information
  * Must provide router MAC address until we implement ARP
  */
-pub fn setup_addr_info(device_name: Option<&str>, router_mac: MACAddress) -> Result<AddrInfo, Error> {
+pub fn setup_addr_info(device_name: Option<&str>, port: u16, router_mac: MACAddress) -> Result<AddrInfo, Error> {
     let addr_mac = get_mac_addr(device_name).unwrap();
     
     // Look for a specific device name and try to get IPv4 Address for it
@@ -38,7 +39,7 @@ pub fn setup_addr_info(device_name: Option<&str>, router_mac: MACAddress) -> Res
                     if let IpAddr::V4(ip) = addr.addr {
                         let addr_ip = IPv4Address::from_slice(ip.octets());
 
-                        return Ok(AddrInfo { addr_mac: addr_mac, addr_ipv4: addr_ip, capture: cap, interface: name.to_string(), router_mac: router_mac })
+                        return Ok(AddrInfo { addr_mac: addr_mac, addr_ipv4: addr_ip, port: port, capture: cap, interface: name.to_string(), router_mac: router_mac })
                     }
                 }
                 return Err(Error::PcapError("Device found, but no IPv4 address".to_string()));
@@ -58,7 +59,7 @@ pub fn setup_addr_info(device_name: Option<&str>, router_mac: MACAddress) -> Res
             if let IpAddr::V4(ip) = addr.addr {
                 let addr_ip = IPv4Address::from_slice(ip.octets());
 
-                return Ok(AddrInfo { addr_mac: addr_mac, addr_ipv4: addr_ip, capture: cap, interface: device.name.to_string(), router_mac: router_mac })
+                return Ok(AddrInfo { addr_mac: addr_mac, addr_ipv4: addr_ip, port: port, capture: cap, interface: device.name.to_string(), router_mac: router_mac })
             }
         }
         return Err(Error::PcapError("Device found, but no IPv4 address".to_string()));
