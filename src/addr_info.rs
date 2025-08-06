@@ -3,6 +3,10 @@ use core::net::{IpAddr};
 use pcap::{Active, Capture, Device, Error};
 use pnet::datalink;
 
+/**
+ * Designed to store information pertaining to the host device for sending packets
+ * Storing router MAC address until we implement ARP
+ */
 pub struct AddrInfo {
     pub addr_mac: MACAddress,
     pub addr_ipv4: IPv4Address,
@@ -11,6 +15,10 @@ pub struct AddrInfo {
     pub router_mac: MACAddress
 }
 
+/**
+ * Returns AddrInfo with device information
+ * Must provide router MAC address until we implement ARP
+ */
 pub fn setup_addr_info(device_name: Option<&str>, router_mac: MACAddress) -> Result<AddrInfo, Error> {
     let addr_mac = get_mac_addr(device_name).unwrap();
     
