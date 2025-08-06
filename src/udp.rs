@@ -18,6 +18,7 @@ struct UDPHeader {
 impl UDPDatagram {
     /**
      * Returns a new UDPDatagram by specifying the required fields
+     * Calculates and sets the checksum and length fields
      */
     pub fn new(src_port: u16, dest_port: u16, src_addr: IPv4Address, dest_addr: IPv4Address, data: Vec<u8>) -> Self {
         let header = UDPHeader {
@@ -32,7 +33,7 @@ impl UDPDatagram {
             data: data
         };
 
-        packet.set_checksum(17, src_addr, dest_addr);
+        packet.set_checksum(src_addr, dest_addr);
         packet
     }
 
@@ -61,7 +62,7 @@ impl UDPDatagram {
 
     /**
      * Returns bytes of UDP Datagram
-     * Assumes checksum has already been calculated with self.set_checksum() 
+     * Assumes checksum has already been calculated with self.set_checksum() or UDPDatagram::new()
      */
     pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut buf: Vec<u8> = self.header.to_bytes()?;
@@ -114,16 +115,16 @@ impl UDPDatagram {
     /**
      * Internally calculates, sets, and returns checksum
      */
-    pub fn set_checksum(&mut self, protocol: u8, src_addr: IPv4Address, dest_addr: IPv4Address) -> u16 {
-        self.header.checksum = self.calculate_checksum(protocol, src_addr, dest_addr);
+    pub fn set_checksum(&mut self, src_addr: IPv4Address, dest_addr: IPv4Address) -> u16 {
+        self.header.checksum = self.calculate_checksum(src_addr, dest_addr);
         self.header.checksum
     }
 
     /**
      * Verify checksum after receiving a datagram with from_bytes()
      */
-    pub fn verify_checksum(&self, protocol: u8, src_addr: IPv4Address, dest_addr: IPv4Address) -> Result<(), Error> {
-        if self.header.checksum != self.calculate_checksum(protocol, src_addr, dest_addr) {
+    pub fn verify_checksum(&self, src_addr: IPv4Address, dest_addr: IPv4Address) -> Result<(), Error> {
+        if self.header.checksum != self.calculate_checksum(src_addr, dest_addr) {
             return Err(Error::PcapError("UDP datagram checksum mismatch".to_string()));
         }
         Ok(())
@@ -132,7 +133,7 @@ impl UDPDatagram {
     /**
      * Returns the checksum of the UDP datagram
      */
-    fn calculate_checksum(&self, protocol: u8, src_addr: IPv4Address, dest_addr: IPv4Address) -> u16 {
+    fn calculate_checksum(&self, src_addr: IPv4Address, dest_addr: IPv4Address) -> u16 {
         let mut checksum: u32 = 0;
 
         // Pseudo-header
@@ -148,7 +149,7 @@ impl UDPDatagram {
         let word = u16::from_be_bytes([dest_addr_bytes[2], dest_addr_bytes[3]]);
         checksum = checksum.wrapping_add(word as u32);
 
-        checksum = checksum.wrapping_add(protocol as u32);
+        checksum = checksum.wrapping_add(17 as u32); // protocol = 17 (UDP)
         checksum = checksum.wrapping_add(self.header.length as u32);
 
         // UDP header
@@ -254,6 +255,22 @@ mod tests {
      */
     #[test]
     fn test_udp_packet() {
-        /* TODO */
+        let src_addr = IPv4Address::new(192, 168, 1, 45);
+        let dest_addr = IPv4Address::new(192, 168, 5, 87);
+        let data = vec![0x54, 0x29, 0x03, 0x04];
+
+        let datagram = UDPDatagram::new(1080, 4200, src_addr, dest_addr, data);
+        println!("{}", datagram);
+
+        let datagram_bytes = datagram.to_bytes().unwrap();
+        let datagram2 = UDPDatagram::from_bytes(&datagram_bytes).unwrap();
+
+        println!("{}", datagram2);
+
+        assert!(datagram2.verify_checksum(src_addr, dest_addr).is_ok());
+        assert_eq!(datagram.src_port(), datagram2.src_port());
+        assert_eq!(datagram.dest_port(), datagram2.dest_port());
+        assert_eq!(datagram.length(), datagram2.length());
+        assert_eq!(datagram.data(), datagram2.data());
     }
 }
