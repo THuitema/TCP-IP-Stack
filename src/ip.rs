@@ -1,5 +1,6 @@
-use pcap::Error;
+use pcap::{Active, Capture, Error};
 use std::fmt;
+use crate::ethernet::EthernetFrame;
 
 #[derive(Clone)]
 pub struct IPv4Packet {
@@ -154,6 +155,17 @@ impl IPv4Packet {
         buf.extend(&self.payload);
 
         Ok(buf)
+    }
+
+    /**
+     * Sends IPv4 packet to dest_addr
+     * Recalculates and sets checksum field
+     */
+    pub fn send(&mut self, capture: &mut Capture<Active>) -> Result<(), Error> {
+        self.set_checksum();
+        let ipv4_bytes = self.to_bytes()?;
+        let ethernet_frame = EthernetFrame::from_bytes(&ipv4_bytes)?;
+        ethernet_frame.send_frame(capture)
     }
 
     /**
