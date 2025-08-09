@@ -1,6 +1,7 @@
 use pcap::{Active, Capture, Error};
 use std::convert::TryInto;
 use std::fmt;
+use crate::{addr_info::AddrInfo};
 
 #[derive(Clone)]
 pub struct EthernetFrame {
@@ -24,7 +25,7 @@ impl EthernetFrame {
     /**
      * Returns a new EthernetFrame
      */
-    pub fn new(src_addr: MACAddress, dest_addr: MACAddress, ethertype: u16, payload: Vec<u8>) -> Self {
+    pub fn new(src_addr: MACAddress, dest_addr: MACAddress, ethertype: u16, payload: &[u8]) -> Self {
         let header = EthernetHeader {
             dest_addr: dest_addr,
             src_addr: src_addr,
@@ -33,7 +34,7 @@ impl EthernetFrame {
 
         Self {
             header: header,
-            payload: payload
+            payload: payload.to_vec()
         }
     }
 
@@ -239,6 +240,19 @@ impl fmt::Display for MACAddress {
         )
     }
 }
+
+/**
+ * Constructs and sends ethernet frame
+ * dest_mac: MACAddress, typically your device's router MAC address if buffer represents an IP packet
+ * addr_info: &mut AddrInfo, contains your device's network info
+ * buffer: &[u8], bytes to send
+ */
+pub fn send(dest_mac: MACAddress, addr_info: &mut AddrInfo, buffer: &[u8]) -> Result<(), Error> {
+    let ethertype = 0x0800; // default ipv4 for now
+    let ethernet = EthernetFrame::new(addr_info.addr_mac, dest_mac, ethertype, buffer);
+    ethernet.send_frame(&mut addr_info.capture)
+}
+
 
 pub fn capture_ethernet_frames(capture: &mut Capture<Active>, count: usize) -> Vec<EthernetFrame> {
     let mut frames: Vec<EthernetFrame> = Vec::new();

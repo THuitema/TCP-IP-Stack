@@ -1,6 +1,6 @@
-use pcap::{Active, Capture, Error};
+use pcap::{Error};
 use std::fmt;
-use crate::{addr_info::AddrInfo, ethernet::EthernetFrame};
+use crate::{addr_info::AddrInfo, ethernet};
 
 #[derive(Clone)]
 pub struct IPv4Packet {
@@ -46,7 +46,7 @@ impl IPv4Packet {
     /**
      * Returns a default IPv4 packet given the minimum required fields
      */
-    pub fn new(src_addr: IPv4Address, dest_addr: IPv4Address, protocol: IPProtocol, payload: Vec<u8>) -> Self {
+    pub fn new(src_addr: IPv4Address, dest_addr: IPv4Address, protocol: IPProtocol, payload: &[u8]) -> Self {
         let mut header = IPv4Header {
             version: 4,
             ihl: 5,
@@ -67,7 +67,7 @@ impl IPv4Packet {
 
         Self {
             header: header,
-            payload: payload
+            payload: payload.to_vec()
         }
     }
 
@@ -155,17 +155,6 @@ impl IPv4Packet {
         buf.extend(&self.payload);
 
         Ok(buf)
-    }
-
-    /**
-     * Sends IPv4 packet to dest_addr
-     * Recalculates and sets checksum field
-     */
-    pub fn send(&mut self, addr_info: &mut AddrInfo) -> Result<(), Error> {
-        self.set_checksum();
-        let ipv4_bytes: Vec<u8> = self.to_bytes()?;
-        let ethernet_frame = EthernetFrame::new(addr_info.addr_mac, addr_info.router_mac, 0x0800, ipv4_bytes);
-        ethernet_frame.send_frame(&mut addr_info.capture)
     }
 
     /**
@@ -589,6 +578,19 @@ impl fmt::Display for IPv4Address {
             self.octets[3]
         )
     }
+}
+
+/**
+ * Constructs and sends IPv4 packet to destination IP address
+ * dest_ipv4: IPv4Address, destination IP address
+ * addr_info: &mut AddrInfo, contains your device's network info
+ * protocol: IPProtocol, protocol of payload
+ * buffer: &[u8], bytes to send in payload
+ */
+pub fn send(dest_ipv4: IPv4Address, addr_info: &mut AddrInfo, protocol: IPProtocol, buffer: &[u8]) -> Result<(), Error> {
+    let ipv4 = IPv4Packet::new(addr_info.addr_ipv4, dest_ipv4, protocol, buffer);
+    let ipv4_bytes = ipv4.to_bytes()?;
+    ethernet::send(addr_info.router_mac, addr_info, &ipv4_bytes)
 }
 
 mod tests {

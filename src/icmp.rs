@@ -1,6 +1,6 @@
 use pcap::Error;
 use std::fmt;
-use crate::{addr_info::AddrInfo, parse::{ParsedPacket, Transport}};
+use crate::{addr_info::AddrInfo, parse::{ParsedPacket, Transport}, ip};
 use chrono::{DateTime, Local, LocalResult, TimeZone};
 
 #[derive(Clone)]
@@ -21,7 +21,7 @@ impl ICMPPacket {
     /**
      * Returns a default ICMPPacket, given the required fields
      */
-    pub fn new(icmp_type: u8, code: u8, content: u32, payload: Vec<u8>) -> Self {
+    pub fn new(icmp_type: u8, code: u8, content: u32, payload: &[u8]) -> Self {
         let header = ICMPHeader {
             icmp_type: icmp_type,
             code: code,
@@ -31,7 +31,7 @@ impl ICMPPacket {
 
         let mut packet = Self {
             header: header,
-            payload: payload
+            payload: payload.to_vec()
         };
 
         packet.header.checksum = packet.calculate_checksum();
@@ -308,6 +308,21 @@ pub fn process_icmp(mut packet: ParsedPacket, addr_info: &mut AddrInfo) -> Resul
             Ok(())
         }
     }
+}
+
+/**
+ * Constructs and sends ICMP packet to destination IP address
+ * dest_ipv4: IPv4Address, destination IP address
+ * addr_info: &mut AddrInfo, contains your device's network info
+ * icmp_type: u8, type of ICMP packet
+ * code: u8, code specific to icmp_type
+ * content: u32, content field for ICMP packet
+ * buffer: &[u8], bytes to send in payload
+ */
+pub fn send(dest_ipv4: ip::IPv4Address, addr_info: &mut AddrInfo, icmp_type: u8, code: u8, content: u32, buffer: &[u8]) -> Result<(), Error> {
+    let icmp = ICMPPacket::new(icmp_type, code, content, buffer);
+    let icmp_bytes = icmp.to_bytes()?;
+    ip::send(dest_ipv4, addr_info, ip::IPProtocol::ICMP, &icmp_bytes)
 }
 
 #[cfg(test)]

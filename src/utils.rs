@@ -15,7 +15,7 @@ pub fn ping(dest_ip: IPv4Address, addr_info: &mut AddrInfo, size: u16) -> () {
     let identifier: u16 = 12345; // probably needs to be some random number
     let mut content = (identifier as u32) << 16;
     let icmp_payload: Vec<u8> = vec![0x41; 56];
-    let mut icmp_packet = ICMPPacket::new(8, 0, content, icmp_payload);
+    let mut icmp_packet = ICMPPacket::new(8, 0, content, &icmp_payload);
 
     // IPv4 Packet
     let protocol = match IPProtocol::from_str("ICMP") {
@@ -34,7 +34,7 @@ pub fn ping(dest_ip: IPv4Address, addr_info: &mut AddrInfo, size: u16) -> () {
         }
     };
 
-    let ip_packet = IPv4Packet::new(addr_info.addr_ipv4, dest_ip, protocol, ip_payload);
+    let ip_packet = IPv4Packet::new(addr_info.addr_ipv4, dest_ip, protocol, &ip_payload);
 
     // Ethernet Frame
     let ethertype: u16 = 0x0800;
@@ -46,7 +46,7 @@ pub fn ping(dest_ip: IPv4Address, addr_info: &mut AddrInfo, size: u16) -> () {
         }
     };
 
-    let ethernet_frame = EthernetFrame::new(addr_info.addr_mac, addr_info.router_mac, ethertype, ethernet_payload);
+    let ethernet_frame = EthernetFrame::new(addr_info.addr_mac, addr_info.router_mac, ethertype, &ethernet_payload);
     let mut ethernet_bytes = match ethernet_frame.to_bytes() {
         Ok(p) => p,
         Err(e) => {
