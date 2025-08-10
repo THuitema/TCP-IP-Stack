@@ -27,13 +27,13 @@ impl EthernetFrame {
      */
     pub fn new(src_addr: MACAddress, dest_addr: MACAddress, ethertype: u16, payload: &[u8]) -> Self {
         let header = EthernetHeader {
-            dest_addr: dest_addr,
-            src_addr: src_addr,
-            ethertype: ethertype
+            dest_addr,
+            src_addr,
+            ethertype
         };
 
         Self {
-            header: header,
+            header,
             payload: payload.to_vec()
         }
     }
@@ -57,10 +57,10 @@ impl EthernetFrame {
 
         let payload = data[14..].to_vec();
 
-        return Ok(EthernetFrame {
-            header: header,
-            payload: payload,
-        });
+        Ok(EthernetFrame {
+            header,
+            payload,
+        })
     }
 
     /**

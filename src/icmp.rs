@@ -23,14 +23,14 @@ impl ICMPPacket {
      */
     pub fn new(icmp_type: u8, code: u8, content: u32, payload: &[u8]) -> Self {
         let header = ICMPHeader {
-            icmp_type: icmp_type,
-            code: code,
+            icmp_type,
+            code,
             checksum: 0,
-            content: content
+            content
         };
 
         let mut packet = Self {
-            header: header,
+            header,
             payload: payload.to_vec()
         };
 
@@ -54,7 +54,7 @@ impl ICMPPacket {
         };
 
         let packet = ICMPPacket { 
-            header: header, 
+            header, 
             payload: data[8..].to_vec()
         };
 
@@ -151,9 +151,7 @@ impl ICMPPacket {
             checksum = (checksum & 0xFFFF) + (checksum >> 16);
         }
 
-        let result = !(checksum as u16);
-
-        result
+        !(checksum as u16)
     }
 
     pub fn content(&self) -> u32 {
@@ -212,7 +210,7 @@ impl ICMPPacket {
      * Returns number of bytes in packet
      */
     pub fn size(&self) -> usize {
-        return 8 + self.payload.len()
+        8 + self.payload.len()
     }
 }
 
@@ -273,7 +271,7 @@ pub fn process_icmp(mut packet: ParsedPacket, addr_info: &mut AddrInfo) -> Resul
         _ => return Err(Error::PcapError("(process_icmp) invalid ParsedPacket provided. Transport protocol is not ICMP".to_string()))
     };
 
-    let datetime: DateTime<Local> = packet.timestamp.into();
+    let datetime: DateTime<Local> = packet.timestamp;
     let time_formatted = datetime.format("%H:%M").to_string();
 
     // Only expecting to receive echo requests when running our network stack

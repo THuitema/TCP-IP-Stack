@@ -22,14 +22,14 @@ impl UDPDatagram {
      */
     pub fn new(src_port: u16, dest_port: u16, src_addr: ip::IPv4Address, dest_addr: ip::IPv4Address, data: &[u8]) -> Self {
         let header = UDPHeader {
-            src_port: src_port,
-            dest_port: dest_port,
+            src_port,
+            dest_port,
             length: 8 + data.len() as u16,
             checksum: 0
         };
 
         let mut packet = Self {
-            header: header,
+            header,
             data: data.to_vec()
         };
 
@@ -53,7 +53,7 @@ impl UDPDatagram {
         };
 
         let packet = UDPDatagram {
-            header: header,
+            header,
             data: data[8..].to_vec()
         };
 
@@ -149,7 +149,7 @@ impl UDPDatagram {
         let word = u16::from_be_bytes([dest_addr_bytes[2], dest_addr_bytes[3]]);
         checksum = checksum.wrapping_add(word as u32);
 
-        checksum = checksum.wrapping_add(17 as u32); // protocol = 17 (UDP)
+        checksum = checksum.wrapping_add(17); // protocol = 17 (UDP)
         checksum = checksum.wrapping_add(self.header.length as u32);
 
         // UDP header
@@ -173,9 +173,7 @@ impl UDPDatagram {
             checksum = (checksum & 0xFFFF) + (checksum >> 16);
         }
 
-        let result = !(checksum as u16);
-
-        result
+        !(checksum as u16)
     }
 
     /** 
@@ -239,7 +237,7 @@ pub fn process_udp(packet: ParsedPacket) -> Result<(), Error> {
         _ => return Err(Error::PcapError("(process_udp) invalid ParsedPacked provided. Transport protocol is not UDP".to_string()))
     };
 
-    let datetime: DateTime<Local> = packet.timestamp.into();
+    let datetime: DateTime<Local> = packet.timestamp;
     let time_formatted = datetime.format("%H:%M").to_string();
 
     println!("[{}] UDP datagram from {}:{} to {}:{} ({} bytes)", time_formatted, packet.ipv4.src_addr(), udp_datagram.src_port(), packet.ipv4.dest_addr(), udp_datagram.dest_port(), udp_datagram.length());

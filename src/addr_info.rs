@@ -39,13 +39,13 @@ pub fn setup_addr_info(device_name: Option<&str>, port: u16, router_mac: MACAddr
                     if let IpAddr::V4(ip) = addr.addr {
                         let addr_ip = IPv4Address::from_slice(ip.octets());
 
-                        return Ok(AddrInfo { addr_mac: addr_mac, addr_ipv4: addr_ip, port: port, capture: cap, interface: name.to_string(), router_mac: router_mac })
+                        return Ok(AddrInfo { addr_mac, addr_ipv4: addr_ip, port, capture: cap, interface: name.to_string(), router_mac })
                     }
                 }
                 return Err(Error::PcapError("Device found, but no IPv4 address".to_string()));
             }
         }
-        return Err(Error::PcapError("Device not found".to_string()));
+        Err(Error::PcapError("Device not found".to_string()))
     } else {
         let device = Device::lookup().unwrap().unwrap();
         let cap = Capture::from_device(device.name.as_str())
@@ -59,10 +59,10 @@ pub fn setup_addr_info(device_name: Option<&str>, port: u16, router_mac: MACAddr
             if let IpAddr::V4(ip) = addr.addr {
                 let addr_ip = IPv4Address::from_slice(ip.octets());
 
-                return Ok(AddrInfo { addr_mac: addr_mac, addr_ipv4: addr_ip, port: port, capture: cap, interface: device.name.to_string(), router_mac: router_mac })
+                return Ok(AddrInfo { addr_mac, addr_ipv4: addr_ip, port, capture: cap, interface: device.name.to_string(), router_mac })
             }
         }
-        return Err(Error::PcapError("Device found, but no IPv4 address".to_string()));
+        Err(Error::PcapError("Device found, but no IPv4 address".to_string()))
     }
 }
 
@@ -83,10 +83,8 @@ fn get_mac_addr(device_name: Option<&str>) -> Result<MACAddress, Error> {
                     None => return Err(Error::PcapError("MAC address not found for interface".to_string()))
                 }
             }
-        } else if device_name == None {
-            if let Some(mac) = iface.mac {
-                return Ok(MACAddress::from_slice(mac.octets()));
-            }
+        } else if let Some(mac) = iface.mac {
+            return Ok(MACAddress::from_slice(mac.octets()))
         }
     }
     Err(Error::PcapError("No interfaces found when trying to determine MAC address".to_string()))

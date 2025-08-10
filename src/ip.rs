@@ -2,13 +2,11 @@ use pcap::{Error};
 use std::fmt;
 use crate::{addr_info::AddrInfo, ethernet};
 
-#[derive(Clone)]
 pub struct IPv4Packet {
     header: IPv4Header,
     payload: Vec<u8>,
 }
 
-#[derive(Clone)]
 struct IPv4Header {
     version: u8,              // IP version (4 bits)
     ihl: u8,                  // length of header in 32-bit words (4 bits)
@@ -31,6 +29,7 @@ pub struct IPv4Address {
     octets: [u8; 4]
 }
 
+#[allow(clippy::upper_case_acronyms)]
 #[derive(Copy, Clone)]
 pub enum IPProtocol {
     ICMP = 1,
@@ -57,16 +56,16 @@ impl IPv4Packet {
             flags: 0,
             offset: 0,
             ttl: 64,
-            protocol: protocol,
+            protocol,
             checksum: 0,
-            src_addr: src_addr,
-            dest_addr: dest_addr,
+            src_addr,
+            dest_addr,
             options: None
         };
         header.checksum = header.calculate_checksum();
 
         Self {
-            header: header,
+            header,
             payload: payload.to_vec()
         }
     }
@@ -86,7 +85,7 @@ impl IPv4Packet {
         }
 
         let ihl = payload[0] & 0x0F; // last 4 bits
-        let dcsp = payload[1] >> 2;
+        let dscp = payload[1] >> 2;
         let ecn = payload[1] & 0x03;
         let packet_length = u16::from_be_bytes([payload[2], payload[3]]);
         let identification = u16::from_be_bytes([payload[4], payload[5]]);
@@ -116,24 +115,24 @@ impl IPv4Packet {
         }
 
         let header = IPv4Header {
-            version: version,
-            ihl: ihl,
-            dscp: dcsp,
-            ecn: ecn,
-            packet_length: packet_length,
-            identification: identification,
-            flags: flags,
-            offset: offset,
-            ttl: ttl,
-            protocol: protocol,
-            checksum: checksum,
+            version,
+            ihl,
+            dscp,
+            ecn,
+            packet_length,
+            identification,
+            flags,
+            offset,
+            ttl,
+            protocol,
+            checksum,
             src_addr: src_addr_ip,
             dest_addr: dest_addr_ip,
-            options: options
+            options
         };
 
         let packet = IPv4Packet {
-            header: header,
+            header,
             payload: ip_payload,
         };
 
@@ -330,7 +329,7 @@ impl IPv4Packet {
      */
     pub fn options(&self) -> Option<&[u8]> {
         if let Some(o) = &self.header.options {
-            return Some(&o)
+            return Some(o)
         }
         None
     }
@@ -348,7 +347,7 @@ impl IPv4Packet {
      */
     pub fn set_payload(&mut self, payload: Vec<u8>) {
         let old_payload_length = self.payload.len();
-        self.header.packet_length = self.header.packet_length + ((payload.len() - old_payload_length) as u16);
+        self.header.packet_length += (payload.len() - old_payload_length) as u16;
         self.payload = payload;
     }
 
@@ -434,7 +433,7 @@ impl IPv4Header {
 
         // add options
         if let Some(options) = &self.options {
-            for i in (0..usize::from(options.len())).step_by(2) {
+            for i in (0..options.len()).step_by(2) {
                 if i != 10 {
                     let word = u16::from_be_bytes([options[i], options[i+1]]);
                     checksum = checksum.wrapping_add(word as u32) // add one's complement of word
@@ -447,9 +446,7 @@ impl IPv4Header {
             checksum = (checksum & 0xFFFF) + (checksum >> 16);
         }
 
-        let result = !(checksum as u16);
-
-        result
+        !(checksum as u16)
     }
 }
 
@@ -458,7 +455,7 @@ impl IPv4Address {
         Self { octets: [a, b, c, d] }
     }
 
-    pub fn to_u32(&self) -> u32 {
+    pub fn to_u32(self) -> u32 {
         u32::from_be_bytes(self.octets)
     }
 
@@ -502,7 +499,7 @@ impl IPProtocol {
         }
     }
 
-    pub fn to_u8(&self) -> u8 {
+    pub fn to_u8(self) -> u8 {
         match self {
             IPProtocol::ICMP => 1,
             IPProtocol::IGMP => 2,
@@ -513,19 +510,6 @@ impl IPProtocol {
             IPProtocol::SCTP => 132,
         }
     }
-
-    pub fn to_string(&self) -> String {
-        match self {
-            IPProtocol::ICMP => "ICMP".to_string(),
-            IPProtocol::IGMP => "IGMP".to_string(),
-            IPProtocol::TCP => "TCP".to_string(),
-            IPProtocol::UDP => "UDP".to_string(),
-            IPProtocol::ENCAP => "ENCAP".to_string(),
-            IPProtocol::OSPF => "OSPF".to_string(),
-            IPProtocol::SCTP => "SCTP".to_string(),
-        }
-    }
-
 }
 
 impl fmt::Display for IPv4Packet {
@@ -558,7 +542,7 @@ impl fmt::Display for IPv4Header {
             self.flags,
             self.offset * 8,
             self.ttl,
-            self.protocol.to_string(),
+            self.protocol,
             self.checksum,
             self.src_addr,
             self.dest_addr,
@@ -580,6 +564,20 @@ impl fmt::Display for IPv4Address {
     }
 }
 
+impl fmt::Display for IPProtocol {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            IPProtocol::ICMP => write!(f, "ICMP"),
+            IPProtocol::IGMP => write!(f, "IGMP"),
+            IPProtocol::TCP => write!(f, "TCP"),
+            IPProtocol::UDP => write!(f, "UDP"),
+            IPProtocol::ENCAP => write!(f, "ENCAP"),
+            IPProtocol::OSPF => write!(f, "OSPF"),
+            IPProtocol::SCTP => write!(f, "SCTP"),
+        }
+    }
+}
+
 /**
  * Constructs and sends IPv4 packet to destination IP address
  * dest_ipv4: IPv4Address, destination IP address
@@ -593,6 +591,7 @@ pub fn send(dest_ipv4: IPv4Address, addr_info: &mut AddrInfo, protocol: IPProtoc
     ethernet::send(addr_info.router_mac, addr_info, &ipv4_bytes)
 }
 
+#[cfg(test)]
 mod tests {
     use super::*;
 

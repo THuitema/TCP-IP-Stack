@@ -40,25 +40,22 @@ fn capture_loop(addr_info: &mut AddrInfo, size: usize) {
     while let Ok(captured_frame) = addr_info.capture.next_packet() {
         count += 1;
 
-        match parse(captured_frame) {
-            Ok(packet) => {
-                match &packet.transport {
-                    Transport::ICMP(_) => {
-                        match process_icmp(packet, addr_info) {
-                            Ok(_) => (),
-                            Err(e) => eprintln!("{}", e)
-                        }
-                    },
-                    Transport::UDP(_) => {
-                        match process_udp(packet) {
-                            Ok(_) => (),
-                            Err(e) => eprintln!("{}", e)
-                        }
-                    },
-                    _ => ()
-                }                
-            },
-            Err(_) => ()
+        if let Ok(packet) = parse(captured_frame) {
+            match &packet.transport {
+                Transport::ICMP(_) => {
+                    match process_icmp(packet, addr_info) {
+                        Ok(_) => (),
+                        Err(e) => eprintln!("{}", e)
+                    }
+                },
+                Transport::UDP(_) => {
+                    match process_udp(packet) {
+                        Ok(_) => (),
+                        Err(e) => eprintln!("{}", e)
+                    }
+                },
+                _ => ()
+            }                
         } 
 
         if count > size {

@@ -10,6 +10,7 @@ pub struct ParsedPacket {
     pub transport: Transport,
 }
 
+#[allow(clippy::upper_case_acronyms)]
 pub enum Transport {
     ICMP(ICMPPacket),
     UDP(UDPDatagram),
@@ -18,7 +19,7 @@ pub enum Transport {
 
 impl fmt::Display for ParsedPacket {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let datetime: DateTime<Local> = self.timestamp.into();
+        let datetime: DateTime<Local> = self.timestamp;
         let time_formatted = datetime.format("%H:%M").to_string();
 
         write!(
@@ -38,9 +39,7 @@ pub fn parse(captured_frame: Packet) -> Result<ParsedPacket, Error> {
     let timestamp = Local::now();
 
     let ethernet_frame = EthernetFrame::from_bytes(captured_frame.data)?;
-
     let ip_packet;
-    let transport_packet;
     let network_protocol = ethernet_frame.ethertype_to_protocol_name();
 
     if network_protocol == "IPv4" {
@@ -52,14 +51,14 @@ pub fn parse(captured_frame: Packet) -> Result<ParsedPacket, Error> {
 
     let transport_protocol = ip_packet.protocol_name();
 
-    transport_packet = match transport_protocol.as_str() {
+    let transport_packet = match transport_protocol.as_str() {
         "ICMP" => Transport::ICMP(ICMPPacket::from_bytes(ip_packet.payload())?),
         "UDP" => Transport::UDP(UDPDatagram::from_bytes(ip_packet.payload())?),
         s => return Err(Error::PcapError(format!("(parse) transport layer \"{}\" packets not supported", s)))
     };
 
     Ok(ParsedPacket {
-        timestamp: timestamp,
+        timestamp,
         ethernet: ethernet_frame,
         ipv4: ip_packet,
         transport: transport_packet

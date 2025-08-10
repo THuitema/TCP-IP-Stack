@@ -10,7 +10,7 @@ use std::time::Duration;
 /**
  * Pings dest_ip a certain number of times, specified by size
  */
-pub fn ping(dest_ip: IPv4Address, addr_info: &mut AddrInfo, size: u16) -> () {
+pub fn ping(dest_ip: IPv4Address, addr_info: &mut AddrInfo, size: u16) {
     // ICMP Packet
     let identifier: u16 = 12345; // probably needs to be some random number
     let mut content = (identifier as u32) << 16;
@@ -61,33 +61,26 @@ pub fn ping(dest_ip: IPv4Address, addr_info: &mut AddrInfo, size: u16) -> () {
         let mut cap = recv_cap;
         loop {
             if let Ok(captured_frame) = cap.next_packet() {
-                match parse(captured_frame) {
-                    Ok(packet) => {
-
-                        if let Transport::ICMP(icmp_packet) = &packet.transport {
-                            match icmp_packet.icmp_type() {
-                                0 => {
-                                    // process echo reply
-                                    let seq_num: u16 = (icmp_packet.content() & 0xFF) as u16;
-                                    
-                                    if let Some(sent_time) = icmp_packet.get_timestamp() {
-                                        let duration = packet.timestamp.signed_duration_since(sent_time);
-                                        println!("{} bytes from {}: icmp_seq={} ttl={} time={}ms", icmp_packet.size(), packet.ipv4.src_addr(), seq_num, packet.ipv4.ttl(), duration.num_milliseconds());
-                                    
-                                    } else {
-                                        println!("{} bytes from {}: icmp_seq={} ttl={}", icmp_packet.size(), packet.ipv4.src_addr(), seq_num, packet.ipv4.ttl());
-                                    }
-             
-                                    // Check if we received last ping reply
-                                    if (icmp_packet.content() & 0xFF) as u16 == (size - 1) {
-                                        break;
-                                    }
-                                },
-                                _ => ()
+                if let Ok(packet) = parse(captured_frame) {
+                    if let Transport::ICMP(icmp_packet) = &packet.transport {
+                        if icmp_packet.icmp_type() == 0 {
+                            // process echo reply
+                            let seq_num: u16 = (icmp_packet.content() & 0xFF) as u16;
+                            
+                            if let Some(sent_time) = icmp_packet.get_timestamp() {
+                                let duration = packet.timestamp.signed_duration_since(sent_time);
+                                println!("{} bytes from {}: icmp_seq={} ttl={} time={}ms", icmp_packet.size(), packet.ipv4.src_addr(), seq_num, packet.ipv4.ttl(), duration.num_milliseconds());
+                            
+                            } else {
+                                println!("{} bytes from {}: icmp_seq={} ttl={}", icmp_packet.size(), packet.ipv4.src_addr(), seq_num, packet.ipv4.ttl());
+                            }
+        
+                            // Check if we received last ping reply
+                            if (icmp_packet.content() & 0xFF) as u16 == (size - 1) {
+                                break;
                             }
                         }
                     }
-                    Err(_) => ()
                 }
             }
         }
