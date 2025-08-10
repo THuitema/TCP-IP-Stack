@@ -136,14 +136,16 @@ impl ICMPPacket {
         checksum = checksum.wrapping_add(word as u32);
 
         // add each 16-bit word in payload
-        for i in (0..self.payload.len()).step_by(2) {
+        for i in (0..self.payload.len() / 2 * 2).step_by(2) {
             word = u16::from_be_bytes([self.payload[i], self.payload[i+1]]);
             checksum = checksum.wrapping_add(word as u32) // add one's complement of word
         }   
 
         // Check if we need to add last byte
         if self.payload.len() % 2 == 1 {
-            checksum = checksum.wrapping_add(*self.payload.last().unwrap() as u32);
+            let last_byte = self.payload[self.payload.len() - 1];
+            let word = u16::from_be_bytes([last_byte, 0]);
+            checksum = checksum.wrapping_add(word as u32);
         }
 
         // add back the overflow bits

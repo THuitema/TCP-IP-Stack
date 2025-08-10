@@ -158,14 +158,16 @@ impl UDPDatagram {
         checksum = checksum.wrapping_add(self.header.length as u32);
 
         // UDP data
-        for i in (0..self.data.len()).step_by(2) {
+        for i in (0..self.data.len() / 2 * 2).step_by(2) {
             let word = u16::from_be_bytes([self.data[i], self.data[i+1]]);
             checksum = checksum.wrapping_add(word as u32) // add one's complement of word
         } 
 
         // Check if we need to add last byte
         if self.data.len() % 2 == 1 {
-            checksum = checksum.wrapping_add(*self.data.last().unwrap() as u32);
+            let last_byte = self.data[self.data.len() - 1];
+            let word = u16::from_be_bytes([last_byte, 0]);
+            checksum = checksum.wrapping_add(word as u32);
         }
 
         // add back the overflow bits
