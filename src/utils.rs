@@ -4,6 +4,7 @@ use crate::ethernet::{EthernetFrame};
 use crate::icmp::ICMPPacket;
 use crate::ip::{IPProtocol, IPv4Address, IPv4Packet};
 use crate::parse::{parse, Transport};
+use crate::udp::send;
 use std::thread;
 use std::time::Duration;
 
@@ -134,6 +135,21 @@ pub fn get_devices() {
         for addr in &device.addresses {
             println!("  IP: {:?}", addr.addr);
             println!("  Netmask: {:?}", addr.netmask);
+        }
+    }
+}
+
+/**
+ * Function to test sending UDP datagrams to port 9999 of localhost
+ * Localhost loopback hasn't been implemented, so we send to host's LAN IP address via the router's MAC address
+ */
+pub fn test_udp_send(addr_info: &mut AddrInfo) {
+    let buf = vec![1, 2, 3, 4, 5];
+
+    for _ in 0..5 {
+        match send(addr_info.addr_ipv4, 9999, addr_info, &buf) {
+            Ok(()) => println!("Datagram sent successfully"),
+            Err(e) => eprintln!("{}", e)
         }
     }
 }

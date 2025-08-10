@@ -256,10 +256,6 @@ pub fn process_udp(packet: ParsedPacket) -> Result<(), Error> {
 pub fn send(dest_ipv4: IPv4Address, dest_port: u16, addr_info: &mut AddrInfo, buffer: &[u8]) -> Result<(), Error> {
     let udp = UDPDatagram::new(addr_info.port, dest_port, addr_info.addr_ipv4, dest_ipv4, buffer);
     let udp_bytes = udp.to_bytes()?;
-
-    println!("{}", udp);
-
-    // call send() in IPv4
     ip::send(dest_ipv4, addr_info, ip::IPProtocol::UDP, &udp_bytes)
 }
 

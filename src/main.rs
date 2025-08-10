@@ -10,10 +10,10 @@ mod udp;
 use ethernet::MACAddress;
 use ip::IPv4Address;
 use parse::{parse, Transport};
-use utils::ping;
+use utils::{ping, test_udp_send};
 use icmp::process_icmp;
 use addr_info::{AddrInfo, setup_addr_info};
-use udp::process_udp;
+use udp::{process_udp};
 
 fn main() {
     // Need to hardcode MAC address of router until we implement ARP
@@ -30,7 +30,8 @@ fn main() {
 
     println!("MAC: {}, IP: {}", addr_info.addr_mac, addr_info.addr_ipv4);
     // ping(IPv4Address::new(192, 168, 1, 67), &mut addr_info, 5);
-    capture_loop(&mut addr_info, 100);
+    // capture_loop(&mut addr_info, 100);
+    test_udp_send(&mut addr_info);
 }
 
 fn capture_loop(addr_info: &mut AddrInfo, size: usize) {
