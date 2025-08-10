@@ -7,7 +7,9 @@ Progress:
 - [x] IPv4
 - [x] ICMP
 - [x] MILESTONE: write ping() to test reachability of the stack 
-- [ ] UDP (in progress)
+- [x] UDP datagram construction/deconstruction
+- [ ] UDP send()
+- [ ] UDP recv()
 - [ ] TCP   
 
 Ping implementation:
