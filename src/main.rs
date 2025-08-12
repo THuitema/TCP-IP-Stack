@@ -9,7 +9,7 @@ mod udp;
 
 use ethernet::MACAddress;
 use ip::IPv4Address;
-use parse::{parse, Transport};
+use parse::{ParsedPacket, Transport};
 use utils::{ping, test_udp_send};
 use icmp::process_icmp;
 use addr_info::{AddrInfo, setup_addr_info};
@@ -41,7 +41,7 @@ fn capture_loop(addr_info: &mut AddrInfo, size: usize) {
     while let Ok(captured_frame) = addr_info.capture.next_packet() {
         count += 1;
 
-        if let Ok(packet) = parse(captured_frame) {
+        if let Ok(packet) = ParsedPacket::from_ethernet(captured_frame) {
             match &packet.transport {
                 Transport::ICMP(_) => {
                     match process_icmp(packet, addr_info) {

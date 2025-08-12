@@ -3,7 +3,7 @@ use crate::addr_info::{AddrInfo, setup_capture};
 use crate::ethernet::{EthernetFrame};
 use crate::icmp::ICMPPacket;
 use crate::ip::{IPProtocol, IPv4Address, IPv4Packet};
-use crate::parse::{parse, Transport};
+use crate::parse::{ParsedPacket, Transport};
 use crate::udp::send;
 use std::thread;
 use std::time::Duration;
@@ -62,7 +62,7 @@ pub fn ping(dest_ip: IPv4Address, addr_info: &mut AddrInfo, size: u16) {
         let mut cap = recv_cap;
         loop {
             if let Ok(captured_frame) = cap.next_packet() {
-                if let Ok(packet) = parse(captured_frame) {
+                if let Ok(packet) = ParsedPacket::from_ethernet(captured_frame) {
                     if let Transport::ICMP(icmp_packet) = &packet.transport {
                         if icmp_packet.icmp_type() == 0 {
                             // process echo reply
