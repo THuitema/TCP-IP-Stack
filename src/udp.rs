@@ -1,7 +1,9 @@
 use pcap::Error;
-use std::fmt;
+use std::{collections::VecDeque, fmt};
 use crate::{addr_info::AddrInfo, ip::{self, IPv4Address}, parse::{ParsedPacket, Transport}};
 use chrono::{DateTime, Local};
+use std::sync::mpsc;
+use std::thread;
 
 pub struct UDPDatagram {
     header: UDPHeader,
@@ -13,6 +15,10 @@ struct UDPHeader {
     dest_port: u16,
     length: u16,
     checksum: u16
+}
+
+pub struct UDPSocket {
+    recv_queue: mpsc::Receiver<ParsedPacket>
 }
 
 impl UDPDatagram {
@@ -213,7 +219,7 @@ impl fmt::Display for UDPDatagram {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "UDP Datagram, {{\n{} \n  Data: {} bytes \n}}",
+            "UDP Datagram \n{{\n{}\n  Data: {} bytes \n}}",
             self.header,
             self.data.len()
         )
@@ -224,7 +230,7 @@ impl fmt::Display for UDPHeader {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "  Source port: {},\nDestination port: {},\nLength: {},\nChecksum: {}",
+            "  Source port: {},\n  Destination port: {},\n  Length: {},\n  Checksum: {},",
             self.src_port,
             self.dest_port,
             self.length,
@@ -257,6 +263,50 @@ pub fn send(dest_ipv4: IPv4Address, dest_port: u16, addr_info: &mut AddrInfo, bu
     let udp = UDPDatagram::new(addr_info.port, dest_port, addr_info.addr_ipv4, dest_ipv4, buffer);
     let udp_bytes = udp.to_bytes()?;
     ip::send(dest_ipv4, addr_info, ip::IPProtocol::UDP, &udp_bytes)
+}
+
+impl UDPSocket {
+    /**
+     * Starts a listening thread on port specified in addr_info for host
+     */
+    pub fn bind(addr_info: AddrInfo) -> Result<Self, Error> {
+        // given: addr_info: &mut AddrInfo, port?
+        // initialize queue
+        // spawn thread to capture packets
+        // for each capture, parse frame, verify UDP, verify port matches, then add to queue
+        let (tx, rx) = mpsc::channel();
+
+        thread::spawn(move || {
+            let mut cap = addr_info.capture;
+            loop {
+                if let Ok(captured_frame) = cap.next_packet() {
+                    if let Ok(packet) = ParsedPacket::from_ethernet(captured_frame) {
+                        match &packet.transport {
+
+                            // Add packet to queue if UDP and port matches addr_info
+                            Transport::UDP(datagram) => {
+                                if datagram.dest_port() == addr_info.port {
+                                    if tx.send(packet).is_err() {
+                                        break;
+                                    }
+                                }
+                            },
+                            _ => ()
+                        }                
+                    } 
+                }
+            }
+        });
+
+        Ok(UDPSocket { recv_queue: rx })
+    }
+
+    pub fn recv(&self) -> Result<ParsedPacket, Error> {
+        match self.recv_queue.recv() {
+            Ok(packet) => Ok(packet),
+            Err(e) => Err(Error::PcapError(e.to_string()))
+        }
+    }
 }
 
 #[cfg(test)]
