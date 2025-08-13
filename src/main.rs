@@ -1,19 +1,12 @@
 #![allow(dead_code)]
-mod ethernet;
-mod ip;
-mod icmp;
-mod parse;
-mod utils;
-mod addr_info;
-mod udp;
 
-use ethernet::MACAddress;
-use ip::IPv4Address;
-use parse::{ParsedPacket, Transport};
-use utils::{ping, test_udp_send};
-use icmp::process_icmp;
-use addr_info::{AddrInfo, setup_addr_info};
-use udp::{process_udp, UDPSocket};
+use tcpip_stack::ethernet::MACAddress;
+use tcpip_stack::ip::IPv4Address;
+use tcpip_stack::parse::{ParsedPacket, Transport};
+use tcpip_stack::utils::{ping, test_udp_send};
+use tcpip_stack::icmp::process_icmp;
+use tcpip_stack::addr_info::{AddrInfo, setup_addr_info};
+use tcpip_stack::udp::{process_udp, UDPSocket};
 
 fn main() {
     // Need to hardcode MAC address of router until we implement ARP
