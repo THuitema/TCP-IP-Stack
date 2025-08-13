@@ -8,8 +8,8 @@ Progress:
 - [x] ICMP
 - [x] MILESTONE: write ping() to test reachability of the stack 
 - [x] UDP datagram construction/deconstruction
-- [ ] UDP send()
-- [ ] UDP recv()
+- [x] UDP send()
+- [x] UDP recv() and bind() using sockets
 - [ ] TCP   
 
 Ping implementation:
