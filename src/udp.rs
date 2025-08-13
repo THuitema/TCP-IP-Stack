@@ -1,5 +1,5 @@
 use pcap::Error;
-use std::{collections::VecDeque, fmt};
+use std::fmt;
 use crate::{addr_info::AddrInfo, ip::{self, IPv4Address}, parse::{ParsedPacket, Transport}};
 use chrono::{DateTime, Local};
 use std::sync::mpsc;
@@ -268,12 +268,9 @@ pub fn send(dest_ipv4: IPv4Address, dest_port: u16, addr_info: &mut AddrInfo, bu
 impl UDPSocket {
     /**
      * Starts a listening thread on port specified in addr_info for host
+     * addr_info: AddrInfo, contains your device's network info
      */
     pub fn bind(addr_info: AddrInfo) -> Result<Self, Error> {
-        // given: addr_info: &mut AddrInfo, port?
-        // initialize queue
-        // spawn thread to capture packets
-        // for each capture, parse frame, verify UDP, verify port matches, then add to queue
         let (tx, rx) = mpsc::channel();
 
         thread::spawn(move || {
@@ -281,17 +278,10 @@ impl UDPSocket {
             loop {
                 if let Ok(captured_frame) = cap.next_packet() {
                     if let Ok(packet) = ParsedPacket::from_ethernet(captured_frame) {
-                        match &packet.transport {
-
-                            // Add packet to queue if UDP and port matches addr_info
-                            Transport::UDP(datagram) => {
-                                if datagram.dest_port() == addr_info.port {
-                                    if tx.send(packet).is_err() {
-                                        break;
-                                    }
-                                }
-                            },
-                            _ => ()
+                        if let Transport::UDP(datagram) = &packet.transport {
+                            if datagram.dest_port() == addr_info.port && tx.send(packet).is_err() {
+                                break;
+                            }
                         }                
                     } 
                 }
@@ -301,6 +291,10 @@ impl UDPSocket {
         Ok(UDPSocket { recv_queue: rx })
     }
 
+    /**
+     * Returns next parsed UDP packet received on port set in bind()
+     * Blocks if no packets received
+     */
     pub fn recv(&self) -> Result<ParsedPacket, Error> {
         match self.recv_queue.recv() {
             Ok(packet) => Ok(packet),

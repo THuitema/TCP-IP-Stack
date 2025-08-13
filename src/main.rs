@@ -19,7 +19,7 @@ fn main() {
     // Need to hardcode MAC address of router until we implement ARP
     let router_mac = MACAddress::new(0xc8, 0xa7, 0xa, 0x90, 0x9, 0x48);
 
-    let mut addr_info: AddrInfo = match setup_addr_info(Some("en0"), 54456, router_mac) {
+    let addr_info: AddrInfo = match setup_addr_info(Some("en0"), 54456, router_mac) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("{}", e);
