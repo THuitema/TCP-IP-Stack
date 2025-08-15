@@ -470,6 +470,26 @@ impl IPv4Address {
     pub fn from_slice(slice: [u8; 4]) -> Self {
         Self {octets: slice}
     }
+
+    /**
+     * Converts string formatted as "XXX.XXX.XXX.XXX" to IPv4Address
+     */
+    pub fn from_str(str: &str) -> Option<Self> {
+        let str_toks: Vec<&str> = str.split(".").collect();
+        if str_toks.len() != 4 {
+            return None;
+        }
+
+        let octets_u8: Option<Vec<u8>> = str_toks
+            .iter()
+            .map(|s| s.parse::<u8>().ok())
+            .collect();
+
+        if let Some(octets) = octets_u8 {
+            return Some(Self::from_slice(octets.try_into().unwrap()))
+        }
+        return None
+    }
 }
 
 impl IPProtocol {
