@@ -1,9 +1,7 @@
 use pcap::{Active, Capture, Error};
 use core::str;
-use std::{collections::HashMap, convert::TryInto};
+use std::{convert::TryInto};
 use std::fmt;
-use std::process::Command;
-use crate::ip::IPv4Address;
 use crate::{addr_info::AddrInfo};
 
 #[derive(Clone)]
@@ -24,9 +22,6 @@ pub struct MACAddress {
     octets: [u8; 6]
 }
 
-pub struct ARPEntries {
-    entries: HashMap<IPv4Address, MACAddress>
-}
 
 impl EthernetFrame {
     /**
@@ -231,42 +226,6 @@ impl MACAddress {
     }
 }
 
-impl ARPEntries {
-    /**
-     * Parses the response of "arp -a" to fetch hosts' IP and MAC addresses in local network
-     */
-    pub fn new() -> Result<Self, Error> {
-        let output = Command::new("arp")
-            .arg("-a")
-            .output()
-            .expect("Failed to run ARP");
-        
-        if !output.status.success() {
-            return Err(Error::PcapError(String::from_utf8(output.stderr).unwrap()));
-        }
-
-        let stdout = str::from_utf8(&output.stdout).unwrap();
-        let lines: Vec<&str> = stdout.lines().collect();
-
-        // parse IPv4Address and MAC address from each line
-        let mut entries: HashMap<IPv4Address, MACAddress> = HashMap::new();
-
-        for line in lines {
-            let line_toks: Vec<&str> = line.split_whitespace().collect();
-            if line_toks.len() >= 4 {
-                let ip_str = &line_toks[1][1..line_toks[1].len() - 1]; // removes parentheses
-                let mac_str = line_toks[3];
-                
-                if let (Some(ipv4), Some(mac)) = (IPv4Address::from_str(ip_str), MACAddress::from_hex_str(mac_str)) {
-                    entries.insert(ipv4, mac);
-                }
-            }
-        }
-
-        Ok(Self { entries: HashMap::new() })
-    }
-}
-
 impl fmt::Display for EthernetFrame {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
@@ -307,13 +266,22 @@ impl fmt::Display for MACAddress {
 
 /**
  * Constructs and sends ethernet frame
- * dest_mac: MACAddress, typically your device's router MAC address if buffer represents an IP packet
+ * dest_mac: MACAddress, defaults to router MAC address when None 
  * addr_info: &mut AddrInfo, contains your device's network info
  * buffer: &[u8], bytes to send
  */
-pub fn send(dest_mac: MACAddress, addr_info: &mut AddrInfo, buffer: &[u8]) -> Result<(), Error> {
+pub fn send(dest_mac: Option<MACAddress>, addr_info: &mut AddrInfo, buffer: &[u8]) -> Result<(), Error> {
     let ethertype = 0x0800; // default ipv4 for now
-    let ethernet = EthernetFrame::new(addr_info.addr_mac, dest_mac, ethertype, buffer);
+
+    // Fetch MAC address of host
+    let src_addr = match addr_info.arp_entries.entries.get(&addr_info.addr_ipv4) {
+        Some(mac) => mac.clone(),
+        None => return Err(Error::PcapError("MAC Address not found for host IP".to_string()))
+    };
+
+    let dest_addr = dest_mac.unwrap_or(addr_info.router_mac);
+    
+    let ethernet = EthernetFrame::new(src_addr, dest_addr, ethertype, buffer);
     ethernet.send_frame(&mut addr_info.capture)
 }
 

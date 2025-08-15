@@ -608,7 +608,7 @@ impl fmt::Display for IPProtocol {
 pub fn send(dest_ipv4: IPv4Address, addr_info: &mut AddrInfo, protocol: IPProtocol, buffer: &[u8]) -> Result<(), Error> {
     let ipv4 = IPv4Packet::new(addr_info.addr_ipv4, dest_ipv4, protocol, buffer);
     let ipv4_bytes = ipv4.to_bytes()?;
-    ethernet::send(addr_info.router_mac, addr_info, &ipv4_bytes)
+    ethernet::send(None, addr_info, &ipv4_bytes)
 }
 
 #[cfg(test)]
