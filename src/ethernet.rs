@@ -272,16 +272,9 @@ impl fmt::Display for MACAddress {
  */
 pub fn send(dest_mac: Option<MACAddress>, addr_info: &mut AddrInfo, buffer: &[u8]) -> Result<(), Error> {
     let ethertype = 0x0800; // default ipv4 for now
-
-    // Fetch MAC address of host
-    let src_addr = match addr_info.arp_entries.entries.get(&addr_info.addr_ipv4) {
-        Some(mac) => mac.clone(),
-        None => return Err(Error::PcapError("MAC Address not found for host IP".to_string()))
-    };
-
     let dest_addr = dest_mac.unwrap_or(addr_info.router_mac);
     
-    let ethernet = EthernetFrame::new(src_addr, dest_addr, ethertype, buffer);
+    let ethernet = EthernetFrame::new(addr_info.addr_mac, dest_addr, ethertype, buffer);
     ethernet.send_frame(&mut addr_info.capture)
 }
 
