@@ -1,6 +1,9 @@
 use pcap::{Active, Capture, Error};
-use std::convert::TryInto;
+use core::str;
+use std::{collections::HashMap, convert::TryInto};
 use std::fmt;
+use std::process::Command;
+use crate::ip::IPv4Address;
 use crate::{addr_info::AddrInfo};
 
 #[derive(Clone)]
@@ -16,9 +19,13 @@ struct EthernetHeader {
     ethertype: u16,        // protocol used in the packet payload (e.g. IPv4) (2 bytes)
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 pub struct MACAddress {
     octets: [u8; 6]
+}
+
+pub struct ARPEntries {
+    entries: HashMap<IPv4Address, MACAddress>
 }
 
 impl EthernetFrame {
@@ -201,6 +208,63 @@ impl MACAddress {
     pub fn from_slice(slice: [u8; 6]) -> Self {
         Self {octets: slice}
     }
+
+    /**
+     * Converts string in hexadecimal format "XX:XX:XX:XX:XX:XX" to MACAddress
+     * 
+     */
+    pub fn from_hex_str(str: &str) -> Option<Self> {
+        let str_toks: Vec<&str> = str.split(":").collect();
+        if str_toks.len() != 6 {
+            return None;
+        }
+
+        let octets_u8: Option<Vec<u8>> = str_toks
+            .iter()
+            .map(|s| u8::from_str_radix(s, 16).ok())
+            .collect();
+
+        if let Some(octets) = octets_u8 {
+            return Some(Self::from_slice(octets.try_into().unwrap()))
+        }
+        return None
+    }
+}
+
+impl ARPEntries {
+    /**
+     * Parses the response of "arp -a" to fetch hosts' IP and MAC addresses in local network
+     */
+    pub fn new() -> Result<Self, Error> {
+        let output = Command::new("arp")
+            .arg("-a")
+            .output()
+            .expect("Failed to run ARP");
+        
+        if !output.status.success() {
+            return Err(Error::PcapError(String::from_utf8(output.stderr).unwrap()));
+        }
+
+        let stdout = str::from_utf8(&output.stdout).unwrap();
+        let lines: Vec<&str> = stdout.lines().collect();
+
+        // parse IPv4Address and MAC address from each line
+        let mut entries: HashMap<IPv4Address, MACAddress> = HashMap::new();
+
+        for line in lines {
+            let line_toks: Vec<&str> = line.split_whitespace().collect();
+            if line_toks.len() >= 4 {
+                let ip_str = &line_toks[1][1..line_toks[1].len() - 1]; // removes parentheses
+                let mac_str = line_toks[3];
+                
+                if let (Some(ipv4), Some(mac)) = (IPv4Address::from_str(ip_str), MACAddress::from_hex_str(mac_str)) {
+                    entries.insert(ipv4, mac);
+                }
+            }
+        }
+
+        Ok(Self { entries: HashMap::new() })
+    }
 }
 
 impl fmt::Display for EthernetFrame {
@@ -252,7 +316,6 @@ pub fn send(dest_mac: MACAddress, addr_info: &mut AddrInfo, buffer: &[u8]) -> Re
     let ethernet = EthernetFrame::new(addr_info.addr_mac, dest_mac, ethertype, buffer);
     ethernet.send_frame(&mut addr_info.capture)
 }
-
 
 pub fn capture_ethernet_frames(capture: &mut Capture<Active>, count: usize) -> Vec<EthernetFrame> {
     let mut frames: Vec<EthernetFrame> = Vec::new();

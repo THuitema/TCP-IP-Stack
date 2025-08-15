@@ -24,7 +24,7 @@ struct IPv4Header {
     options: Option<Vec<u8>>  // optional
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, Hash, PartialEq)]
 pub struct IPv4Address {
     octets: [u8; 4]
 }
