@@ -455,6 +455,13 @@ impl IPv4Address {
         Self { octets: [a, b, c, d] }
     }
 
+    /**
+     * Returns IPv4 Address for 127.0.0.1
+     */
+    pub fn localhost() -> Self {
+        Self { octets: [127, 0, 0, 1]}
+    }
+
     pub fn to_u32(self) -> u32 {
         u32::from_be_bytes(self.octets)
     }
@@ -489,6 +496,13 @@ impl IPv4Address {
             return Some(Self::from_slice(octets.try_into().unwrap()))
         }
         return None
+    }
+
+    /**
+     * Returns true if address is 127.0.0.1
+     */
+    pub fn is_localhost(&self) -> bool {
+        return self.octets[0] == 127 && self.octets[1] == 0 && self.octets[2] == 0 && self.octets[3] == 1
     }
 }
 
