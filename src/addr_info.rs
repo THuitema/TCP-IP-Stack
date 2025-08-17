@@ -15,6 +15,7 @@ pub struct AddrInfo {
     pub addr_ipv4: IPv4Address,
     pub port: u16,
     pub capture: Capture<pcap::Active>,
+    pub capture_loopback: Capture<pcap::Active>,
     pub interface: String,
     pub arp_entries: ARPEntries,
     pub router_mac: MACAddress
@@ -84,14 +85,33 @@ pub fn setup_addr_info(device_name: Option<&str>, port: u16) -> Result<AddrInfo,
     if router_mac.is_none() {
         return Err(Error::PcapError("Router MAC Address not found".to_string()))
     }
+
+    let devices = Device::list().unwrap();
+
+    // Get loopback device for localhost sending/receiving
+    let mut device_loopback = None;
+    
+    for device in &devices {
+        if device.flags.is_loopback() {
+            device_loopback = Some(device);
+        }
+    }
+
+    if device_loopback.is_none() {
+        return Err(Error::PcapError("No loopback interface found".to_string()))
+    }
+
+    let capture_loopback = Capture::from_device(device_loopback.unwrap().name.as_str())
+        .unwrap()
+        .immediate_mode(true)
+        .open()
+        .unwrap();
     
     // Look for a specific device name and try to get IPv4 Address for it
     if let Some(name) = device_name {
-        let devices = Device::list().unwrap();
-
         for device in &devices {
             if device.name == name {
-                let cap = Capture::from_device(name)
+                let capture = Capture::from_device(name)
                     .unwrap()
                     .immediate_mode(true)
                     .open()
@@ -101,7 +121,7 @@ pub fn setup_addr_info(device_name: Option<&str>, port: u16) -> Result<AddrInfo,
                     if let IpAddr::V4(ip) = addr.addr {
                         let addr_ip = IPv4Address::from_slice(ip.octets());
 
-                        return Ok(AddrInfo { addr_mac, addr_ipv4: addr_ip, port, capture: cap, interface: name.to_string(), arp_entries, router_mac: router_mac.unwrap() })
+                        return Ok(AddrInfo { addr_mac, addr_ipv4: addr_ip, port, capture, capture_loopback, interface: name.to_string(), arp_entries, router_mac: router_mac.unwrap() })
                     }
                 }
                 return Err(Error::PcapError("Device found, but no IPv4 address".to_string()));
@@ -110,7 +130,7 @@ pub fn setup_addr_info(device_name: Option<&str>, port: u16) -> Result<AddrInfo,
         Err(Error::PcapError("Device not found".to_string()))
     } else {
         let device = Device::lookup().unwrap().unwrap();
-        let cap = Capture::from_device(device.name.as_str())
+        let capture = Capture::from_device(device.name.as_str())
             .unwrap()
             .immediate_mode(true)
             .open()
@@ -121,7 +141,7 @@ pub fn setup_addr_info(device_name: Option<&str>, port: u16) -> Result<AddrInfo,
             if let IpAddr::V4(ip) = addr.addr {
                 let addr_ip = IPv4Address::from_slice(ip.octets());
 
-                return Ok(AddrInfo { addr_mac, addr_ipv4: addr_ip, port, capture: cap, interface: device.name.to_string(), arp_entries, router_mac: router_mac.unwrap() })
+                return Ok(AddrInfo { addr_mac, addr_ipv4: addr_ip, port, capture, capture_loopback, interface: device.name.to_string(), arp_entries, router_mac: router_mac.unwrap() })
             }
         }
         Err(Error::PcapError("Device found, but no IPv4 address".to_string()))
