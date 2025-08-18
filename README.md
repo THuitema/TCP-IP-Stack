@@ -77,7 +77,7 @@ fn main() {
     loop {
         match recv_sock.recv() {
             Ok(packet) => {
-                println!("{}", packet); // timestamp, sender and receiver IP and MAC addresses
+                println!("{}", packet); // timestamp, sender and receiver addresses
 
                 let message = packet.data();
                 println!("Message: {}", message);
