@@ -47,6 +47,17 @@ impl ParsedPacket {
             transport: transport_packet
         })
     }
+
+    /**
+     * Returns data of the transport-layer packet
+     */
+    pub fn data(&self) -> &[u8] {
+        match &self.transport {
+            Transport::ICMP(icmp_packet) => icmp_packet.payload(),
+            Transport::UDP(datagram) => datagram.data(),
+            Transport::TCP => &[]
+        }
+    }
 }
 
 impl fmt::Display for ParsedPacket {
