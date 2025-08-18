@@ -20,14 +20,14 @@ https://github.com/user-attachments/assets/58539268-34f7-4e98-a9fc-8af3aca8d3f0
 ```rust
 // client.rs
 use tcpip_stack::ip::IPv4Address;
-use tcpip_stack::addr_info::setup_addr_info;
+use tcpip_stack::addr_info::{AddrInfo, setup_addr_info};
 use tcpip_stack::udp::send;
 
 fn main() {
     let client_port = 2048;
 
     // Setup address info for en0 interface and port 2048
-    let mut addr_info = match setup_addr_info(Some("en0"), client_port) {
+    let mut addr_info: AddrInfo = match setup_addr_info(Some("en0"), client_port) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("{}", e);
@@ -41,7 +41,7 @@ fn main() {
     let buffer = msg.as_bytes();
 
     // Send message to server
-    if let Err(e) = send(server_ip, server_port, &mut addr_info, &buffer) {
+    if let Err(e) = send(server_ip, server_port, &mut addr_info, buffer) {
         eprintln!("{}", e);
     }
 }
@@ -49,14 +49,15 @@ fn main() {
 
 ```rust
 // server.rs
-use tcpip_stack::addr_info::setup_addr_info;
+use tcpip_stack::addr_info::{AddrInfo, setup_addr_info};
+use tcpip_stack::parse::ParsedPacket;
 use tcpip_stack::udp::UDPSocket;
 
 fn main() {
     let server_port = 10420;
 
     // Setup address info for en0 interface and port 10420
-    let mut addr_info = match setup_addr_info(Some("en0"), 10420) {
+    let mut addr_info: AddrInfo = match setup_addr_info(Some("en0"), 10420) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("{}", e);
@@ -65,7 +66,7 @@ fn main() {
     };
 
     // Spawns a thread to listen for UDP datagrams received on server_port
-    let recv_sock = match bind(addr_info) {
+    let recv_sock: UDPSocket = match UDPSocket::bind(addr_info) {
         Ok(s) => s,
         Err(e) => {
             eprintln!("{}", e);
@@ -76,11 +77,15 @@ fn main() {
     // Listening loop
     loop {
         match recv_sock.recv() {
-            Ok(packet) => {
+            Ok(packet: ParsedPacket) => {
                 println!("{}", packet); // timestamp, sender and receiver addresses
 
-                let message = packet.data();
-                println!("Message: {}", message);
+                // Print message, whether text or bytes
+                let message: &[u8] = packet.data();
+                match std::str::from_utf8(message) {
+                    Ok(text) => println!("Message: {}", text),
+                    Err(_) => println!("Raw bytes: {:?}", message),
+                }
             }
             Err(e) => {
                 eprintln!("Error receiving packet: {}", e);
