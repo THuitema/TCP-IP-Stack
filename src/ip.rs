@@ -455,13 +455,6 @@ impl IPv4Address {
         Self { octets: [a, b, c, d] }
     }
 
-    /**
-     * Returns IPv4 Address for 127.0.0.1
-     */
-    pub fn localhost() -> Self {
-        Self { octets: [127, 0, 0, 1]}
-    }
-
     pub fn to_u32(self) -> u32 {
         u32::from_be_bytes(self.octets)
     }
@@ -496,13 +489,6 @@ impl IPv4Address {
             return Some(Self::from_slice(octets.try_into().unwrap()))
         }
         return None
-    }
-
-    /**
-     * Returns true if address is 127.0.0.1
-     */
-    pub fn is_localhost(&self) -> bool {
-        return self.octets[0] == 127 && self.octets[1] == 0 && self.octets[2] == 0 && self.octets[3] == 1
     }
 }
 
@@ -622,15 +608,7 @@ impl fmt::Display for IPProtocol {
 pub fn send(dest_ipv4: IPv4Address, addr_info: &mut AddrInfo, protocol: IPProtocol, buffer: &[u8]) -> Result<(), Error> {
     let ipv4 = IPv4Packet::new(addr_info.addr_ipv4, dest_ipv4, protocol, buffer);
     let ipv4_bytes = ipv4.to_bytes()?;
-
-    // Check if destination is localhost
-    if dest_ipv4.is_localhost() {
-        // Skip ethernet layer and send bytes on loopback interface
-        addr_info.capture_loopback.sendpacket(ipv4_bytes)
-    } else {
-        ethernet::send(None, addr_info, &ipv4_bytes)
-    }
-    
+    ethernet::send(None, addr_info, &ipv4_bytes)
 }
 
 #[cfg(test)]
