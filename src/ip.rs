@@ -434,10 +434,8 @@ impl IPv4Header {
         // add options
         if let Some(options) = &self.options {
             for i in (0..options.len()).step_by(2) {
-                if i != 10 {
-                    let word = u16::from_be_bytes([options[i], options[i+1]]);
-                    checksum = checksum.wrapping_add(word as u32) // add one's complement of word
-                }
+                let word = u16::from_be_bytes([options[i], options[i+1]]);
+                checksum = checksum.wrapping_add(word as u32) // add one's complement of word
             }
         }
 
