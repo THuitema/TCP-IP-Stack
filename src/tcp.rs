@@ -102,6 +102,10 @@ impl TCPSegment {
         Ok(segment)
     }
 
+    pub fn length(&self) -> u16 {
+        (self.header.header_len * 4) as u16 + self.data.len() as u16
+    }
+
     /**
      * Calculates checksum of the TCPSegment and sets its checksum field
      */
@@ -120,6 +124,65 @@ impl TCPSegment {
      * Calculates the checksum of the TCPSegment
      */
     fn calculate_checksum(&self, src_addr: IPv4Address, dest_addr: IPv4Address) -> u16 {
-        0 // TODO
+        let mut checksum: u32 = 0;
+
+        // Pseudo-header
+        let src_addr_bytes = src_addr.octects();
+        let word = u16::from_be_bytes([src_addr_bytes[0], src_addr_bytes[1]]);
+        checksum = checksum.wrapping_add(word as u32);
+        let word = u16::from_be_bytes([src_addr_bytes[2], src_addr_bytes[3]]);
+        checksum = checksum.wrapping_add(word as u32);
+
+        let dest_addr_bytes = dest_addr.octects();
+        let word = u16::from_be_bytes([dest_addr_bytes[0], dest_addr_bytes[1]]);
+        checksum = checksum.wrapping_add(word as u32);
+        let word = u16::from_be_bytes([dest_addr_bytes[2], dest_addr_bytes[3]]);
+        checksum = checksum.wrapping_add(word as u32);
+
+        checksum = checksum.wrapping_add(6); // protocol = 6 (TCP), padded on left by 8 bits
+        checksum = checksum.wrapping_add(self.length() as u32);
+
+        // UDP header
+        checksum = checksum.wrapping_add(self.header.src_port as u32);
+        checksum = checksum.wrapping_add(self.header.dest_port as u32);
+        checksum = checksum.wrapping_add(self.header.sequence_num);
+        checksum = checksum.wrapping_add(self.header.acknowledgement);
+
+        let header_len = self.header.header_len << 4;
+        checksum = checksum.wrapping_add(header_len as u32);
+
+        let flags = self.header.flags & 0x3F;
+        checksum = checksum.wrapping_add(flags as u32);
+
+        checksum = checksum.wrapping_add(self.header.advertised_win as u32);
+        checksum = checksum.wrapping_add(self.header.urgent_ptr as u32);
+
+        // Add options
+        if let Some(options) = &self.header.options {
+            for i in (0..options.len()).step_by(2) {
+                let word = u16::from_be_bytes([options[i], options[i+1]]);
+                checksum = checksum.wrapping_add(word as u32) // add one's complement of word
+            }
+        }
+
+        // UDP data
+        for i in (0..self.data.len() / 2 * 2).step_by(2) {
+            let word = u16::from_be_bytes([self.data[i], self.data[i+1]]);
+            checksum = checksum.wrapping_add(word as u32) // add one's complement of word
+        } 
+
+        // Check if we need to add last byte
+        if self.data.len() % 2 == 1 {
+            let last_byte = self.data[self.data.len() - 1];
+            let word = u16::from_be_bytes([last_byte, 0]);
+            checksum = checksum.wrapping_add(word as u32);
+        }
+
+        // Add back the overflow bits
+        while (checksum >> 16) != 0 {
+            checksum = (checksum & 0xFFFF) + (checksum >> 16);
+        }
+
+        !(checksum as u16)
     }
 }
