@@ -102,6 +102,16 @@ impl TCPSegment {
         Ok(segment)
     }
 
+    /**
+     * Returns bytes of TCPSegment
+     * Assumes checksum has already been calculated with self.set_checksum() or TCPSegment::new()
+     */
+    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        let mut buf: Vec<u8> = self.header.to_bytes()?;
+        buf.extend(&self.data);
+        Ok(buf)
+    }
+
     pub fn length(&self) -> u16 {
         (self.header.header_len * 4) as u16 + self.data.len() as u16
     }
@@ -184,5 +194,30 @@ impl TCPSegment {
         }
 
         !(checksum as u16)
+    }
+}
+
+impl TCPHeader {
+    /**
+     * Returns bytes of TCPHeader
+     */
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+        let mut buf: Vec<u8> = Vec::new();
+
+        buf.extend_from_slice(&u16::to_be_bytes(self.src_port));
+        buf.extend_from_slice(&u16::to_be_bytes(self.dest_port));
+        buf.extend_from_slice(&u32::to_be_bytes(self.sequence_num));
+        buf.extend_from_slice(&u32::to_be_bytes(self.acknowledgement));
+        buf.push(self.header_len << 4);
+        buf.push(self.flags & 0x3F);
+        buf.extend_from_slice(&u16::to_be_bytes(self.advertised_win));
+        buf.extend_from_slice(&u16::to_be_bytes(self.checksum));
+        buf.extend_from_slice(&u16::to_be_bytes(self.urgent_ptr));
+
+        if let Some(options) = &self.options {
+            buf.extend(options);
+        }
+        
+        Ok(buf)
     }
 }
