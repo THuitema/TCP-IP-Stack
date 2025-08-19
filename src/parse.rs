@@ -36,7 +36,7 @@ impl ParsedPacket {
 
         let transport_packet = match transport_protocol.as_str() {
             "ICMP" => Transport::ICMP(ICMPPacket::from_bytes(ip_packet.payload())?),
-            "UDP" => Transport::UDP(UDPDatagram::from_bytes(ip_packet.payload())?),
+            "UDP" => Transport::UDP(UDPDatagram::from_bytes(ip_packet.payload(), ip_packet.src_addr(), ip_packet.dest_addr())?),
             s => return Err(Error::PcapError(format!("(parse) transport layer \"{}\" packets not supported", s)))
         };
 
