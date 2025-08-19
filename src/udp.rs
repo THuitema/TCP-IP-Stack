@@ -26,7 +26,7 @@ impl UDPDatagram {
      * Returns a new UDPDatagram by specifying the required fields
      * Calculates and sets the checksum and length fields
      */
-    pub fn new(src_port: u16, dest_port: u16, data: &[u8]) -> Self {
+    pub fn new(src_port: u16, dest_port: u16, src_addr: ip::IPv4Address, dest_addr: ip::IPv4Address, data: &[u8]) -> Self {
         let header = UDPHeader {
             src_port,
             dest_port,
@@ -39,6 +39,7 @@ impl UDPDatagram {
             data: data.to_vec()
         };
 
+        packet.set_checksum(src_addr, dest_addr);
         packet
     }
 
@@ -259,8 +260,7 @@ pub fn process_udp(packet: ParsedPacket) -> Result<(), Error> {
  * buffer: &[u8], bytes to send in payload
  */
 pub fn send(dest_ipv4: IPv4Address, dest_port: u16, addr_info: &mut AddrInfo, buffer: &[u8]) -> Result<(), Error> {
-    let mut udp = UDPDatagram::new(addr_info.port, dest_port, buffer);
-    udp.set_checksum(addr_info.addr_ipv4, dest_ipv4);
+    let udp = UDPDatagram::new(addr_info.port, dest_port, addr_info.addr_ipv4, dest_ipv4, buffer);
     let udp_bytes = udp.to_bytes()?;
     ip::send(dest_ipv4, addr_info, ip::IPProtocol::UDP, &udp_bytes)
 }
@@ -316,8 +316,7 @@ mod tests {
         let dest_addr = ip::IPv4Address::new(192, 168, 5, 87);
         let data = vec![0x54, 0x29, 0x03, 0x04];
 
-        let mut datagram = UDPDatagram::new(1080, 4200, &data);
-        datagram.set_checksum(src_addr, dest_addr);
+        let datagram = UDPDatagram::new(1080, 4200, src_addr, dest_addr, &data);
         println!("{}", datagram);
 
         let datagram_bytes = datagram.to_bytes().unwrap();
