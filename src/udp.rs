@@ -206,7 +206,7 @@ impl UDPHeader {
     /**
      * Returns bytes of UDP datagram header
      */
-    pub fn to_bytes(&self) -> Result<Vec<u8>, Error> {
+    fn to_bytes(&self) -> Result<Vec<u8>, Error> {
         let mut buf: Vec<u8> = Vec::new();
         buf.extend_from_slice(&u16::to_be_bytes(self.src_port));
         buf.extend_from_slice(&u16::to_be_bytes(self.dest_port));
